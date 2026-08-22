@@ -1,0 +1,32 @@
+# Dataset Configuration Manifest for Target Crop & Hard-Negative Detector (Stage 1)
+# Target Architecture: YOLOv11-Nano / MobileDet-Pico (384x384 INT8)
+
+path: ./data/crop_detection
+train: images/train
+val: images/val
+test: images/test
+
+# Number of classes
+nc: 7
+
+# Class Taxonomy (Strict separation of Target Organs vs Hard Negatives)
+names:
+  0: target_crop_canopy
+  1: target_crop_leaf
+  2: target_crop_fruit
+  3: hard_neg_soil
+  4: hard_neg_hand
+  5: hard_neg_weed
+  6: hard_neg_tool
+
+# Agronomic Class Metadata
+metadata:
+  target_crops:
+    - Tomato (Solanum lycopersicum)
+    - Potato (Solanum tuberosum)
+    - Chili / Pepper (Capsicum annuum)
+  hard_negative_classes:
+    - 3 # Soil, Mud, Gravel, Coco-peat
+    - 4 # Human Hands, Gloves, Knuckles
+    - 5 # Weeds, Monocot Grass, Turf
+    - 6 # Tools, Hoses, Plastic Mulch, Stakes

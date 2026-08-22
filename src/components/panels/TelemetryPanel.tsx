@@ -1,0 +1,134 @@
+import { useWebSocket } from "@/providers/WebSocketProvider";
+import { useAppStore } from "@/store";
+import { StateOverlay } from "@/components/StateOverlay";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Thermometer, Droplets, Leaf, Clock } from "lucide-react";
+
+// ────────────────────────────────────────────────────────────────
+// TelemetryPanel — live sensor readouts (left panel)
+// ────────────────────────────────────────────────────────────────
+
+interface SensorCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  unit: string;
+  accent: string;
+  barPercent: number;
+  barColor: string;
+}
+
+function SensorCard({ icon, label, value, unit, accent, barPercent, barColor }: SensorCardProps) {
+  return (
+    <div className="rounded-lg border border-border/40 bg-zinc-900/60 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
+            {label}
+          </span>
+        </div>
+        <span className={`text-[10px] font-mono ${accent}`}>{unit}</span>
+      </div>
+      <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+      {/* Mini bar gauge */}
+      <div className="h-1 w-full rounded-full bg-zinc-800 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ease-out ${barColor}`}
+          style={{ width: `${Math.min(100, Math.max(0, barPercent))}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function TelemetryPanel() {
+  const { connectionStatus } = useWebSocket();
+  const temperature = useAppStore((s) => s.temperature);
+  const humidity = useAppStore((s) => s.humidity);
+  const soilMoisture = useAppStore((s) => s.soilMoisture);
+  const lastUpdated = useAppStore((s) => s.lastUpdated);
+  const historyLength = useAppStore((s) => s.history.length);
+
+  const isLive = connectionStatus === "CONNECTED";
+
+  return (
+    <Card className="border-border/50 bg-zinc-950/50">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm">Sensor Telemetry</CardTitle>
+          <Badge
+            variant="outline"
+            className={`text-[10px] gap-1 ${
+              isLive
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                : "border-zinc-500/30 bg-zinc-500/10 text-zinc-400"
+            }`}
+          >
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                isLive ? "bg-emerald-400 animate-pulse" : "bg-zinc-500"
+              }`}
+            />
+            {isLive ? "LIVE" : "IDLE"}
+          </Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        {connectionStatus === "DISCONNECTED" ? (
+          <StateOverlay variant="disconnected" lotusSize={56} />
+        ) : connectionStatus === "CONNECTING" ? (
+          <StateOverlay variant="loading" lotusSize={56} />
+        ) : (
+          <>
+            <SensorCard
+              icon={<Thermometer className="h-3.5 w-3.5 text-orange-400" />}
+              label="Temperature"
+              value={temperature.toFixed(1)}
+              unit="°C"
+              accent="text-orange-400"
+              barPercent={((temperature - 15) / 35) * 100}
+              barColor="bg-gradient-to-r from-orange-600 to-orange-400"
+            />
+            <SensorCard
+              icon={<Droplets className="h-3.5 w-3.5 text-blue-400" />}
+              label="Humidity"
+              value={humidity.toFixed(1)}
+              unit="%RH"
+              accent="text-blue-400"
+              barPercent={humidity}
+              barColor="bg-gradient-to-r from-blue-600 to-blue-400"
+            />
+            <SensorCard
+              icon={<Leaf className="h-3.5 w-3.5 text-emerald-400" />}
+              label="Soil Moisture"
+              value={soilMoisture.toFixed(1)}
+              unit="%"
+              accent="text-emerald-400"
+              barPercent={soilMoisture}
+              barColor="bg-gradient-to-r from-emerald-600 to-emerald-400"
+            />
+
+            {/* Footer metadata */}
+            <div className="flex items-center justify-between pt-1 border-t border-border/30">
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Clock className="h-2.5 w-2.5" />
+                {lastUpdated ? lastUpdated.toLocaleTimeString() : "—"}
+              </div>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {historyLength}/50 pts
+              </span>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

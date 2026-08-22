@@ -1,0 +1,21 @@
+# Pathology Taxonomy Manifest for Stage 4 Classifier
+# Multi-Head Edge Pathology Network
+
+num_classes: 9
+
+classes:
+  0: "Healthy Target Crop"
+  1: "Early Blight (Alternaria solani)"
+  2: "Late Blight (Phytophthora infestans)"
+  3: "Powdery Mildew (Oidium neolycopersici)"
+  4: "Bacterial Spot (Xanthomonas)"
+  5: "Leaf Mold (Passalora fulva)"
+  6: "Septoria Leaf Spot"
+  7: "Nutrient Deficiency (Nitrogen/Potassium)"
+  8: "Pest Infestation (Aphids/Mites)"
+
+# Out-of-Distribution (OOD) Energy Gating Bounds
+ood_config:
+  energy_threshold: -4.5
+  temperature_scaling: 1.35
+  rejection_label: "Indeterminate Observation"
