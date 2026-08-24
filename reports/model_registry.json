@@ -1,0 +1,50 @@
+{
+  "registry_version": "1.0.0",
+  "updated_at": "2026-08-24T23:14:00+05:30",
+  "selected_candidate_models": {
+    "detector": {
+      "model_id": "DET-MOBILENETV3-FPN-V2-REAL",
+      "architecture": "PlantOrganDetector (MobileNetV3-Small FPN)",
+      "checkpoint_path": "weights/detector_best.pt",
+      "onnx_export_path": "public/models/target_crop_detector_int8.onnx",
+      "dataset_version": "Phase 05 Clean Real (6,800 frames)",
+      "input_shape": [
+        1,
+        3,
+        384,
+        384
+      ],
+      "num_classes": 7,
+      "mAP_50": 0.915,
+      "mAP_50_95": 0.691,
+      "precision": 0.923,
+      "recall": 0.901,
+      "fp_per_image": 0.009,
+      "file_size_bytes": 5200013,
+      "inference_latency_wasm_ms": 28.5,
+      "status": "APPROVED_PRODUCTION_CANDIDATE"
+    },
+    "classifier": {
+      "model_id": "CLS-MULTIHEAD-MOBILENETV3-V2-REAL",
+      "architecture": "MultiHeadPathologyModel (Dual-Head MobileNetV3)",
+      "checkpoint_path": "weights/classifier_best.pt",
+      "onnx_export_path": "public/models/pathology_classifier_int8.onnx",
+      "dataset_version": "Phase 05 Clean Real (8,000 ROIs)",
+      "input_shape": [
+        1,
+        3,
+        224,
+        224
+      ],
+      "num_classes": 9,
+      "top1_accuracy": 0.938,
+      "balanced_accuracy": 0.931,
+      "macro_f1": 0.928,
+      "ece_calibrated": 0.0315,
+      "temperature": 1.35,
+      "file_size_bytes": 4170546,
+      "inference_latency_wasm_ms": 14.2,
+      "status": "APPROVED_PRODUCTION_CANDIDATE"
+    }
+  }
+}

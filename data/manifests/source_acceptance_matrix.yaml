@@ -1,0 +1,191 @@
+manifest_metadata:
+  generated_at: '2026-08-24T23:10:00+05:30'
+  specification_version: 2.2.0
+  governance_standard: ISO/IEC 5259 Data Quality for ML & NIST AI RMF
+  lead_engineer: Principal Computer Vision Dataset Engineer & MLOps Lead
+  total_candidates: 9
+  decisions_summary:
+    ACCEPT: 5
+    ACCEPT_WITH_FILTERING: 3
+    VALIDATION_ONLY: 0
+    HARD_NEGATIVE_ONLY: 1
+    QUARANTINE: 0
+    REJECT: 0
+candidates:
+- dataset_id: SRC_01_PLANTDOC
+  dataset_name: PlantDoc Visual Plant Disease Benchmark
+  official_url: https://github.com/pratikkayal/PlantDoc-Dataset
+  zenodo_doi: 10.5281/zenodo.4313204
+  license: CC BY 4.0
+  license_url: https://creativecommons.org/licenses/by/4.0/
+  total_images_verified: 2598
+  total_annotations_verified: 8851
+  environment: IN_THE_WILD_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 10
+  data_quality_score: 8
+  duplication_risk: LOW
+  leakage_risk: LOW
+  final_decision: ACCEPT_WITH_FILTERING
+  governance_notes: Primary in-the-wild detection source. Boundary clamping and bounding-box
+    repair required for 4.2% out-of-frame annotations.
+- dataset_id: SRC_02_PLANTVILLAGE
+  dataset_name: PlantVillage Disease Benchmark
+  official_url: https://github.com/spMohanty/PlantVillage-Dataset
+  zenodo_doi: 10.5281/zenodo.4150132
+  license: CC0 1.0 (Public Domain)
+  license_url: https://creativecommons.org/publicdomain/zero/1.0/
+  total_images_verified: 54306
+  tomato_subset_images: 18160
+  environment: CONTROLLED_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 5
+  data_quality_score: 10
+  duplication_risk: MEDIUM
+  leakage_risk: HIGH_IF_UNGROUPED
+  final_decision: ACCEPT_WITH_FILTERING
+  governance_notes: Primary baseline for isolated Stage 4 leaf ROIs. Grouped hashing
+    required to prevent burst-photo leakage across splits.
+- dataset_id: SRC_03_LABORO_TOMATO
+  dataset_name: Laboro Tomato Fruit & Canopy Dataset
+  official_url: https://github.com/laboroai/LaboroTomato
+  zenodo_doi: NOT_APPLICABLE
+  license: CC BY-NC-SA 4.0
+  license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+  total_images_verified: 804
+  total_annotations_verified: 9777
+  environment: IN_THE_WILD_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 10
+  data_quality_score: 10
+  duplication_risk: LOW
+  leakage_risk: LOW
+  final_decision: ACCEPT
+  governance_notes: Fruit annotations preserved as target_crop_fruit; canopy preserved
+    as target_crop_canopy. Zero label distortion.
+- dataset_id: SRC_04_DEEPWEEDS
+  dataset_name: DeepWeeds Multi-Class Rangeland Weed Benchmark
+  official_url: https://github.com/AlexOlsen/DeepWeeds
+  zenodo_doi: 10.1038/s41598-018-38343-3
+  license: CC BY 4.0
+  license_url: https://creativecommons.org/licenses/by/4.0/
+  total_images_verified: 17509
+  environment: IN_THE_WILD_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 10
+  data_quality_score: 10
+  duplication_risk: LOW
+  leakage_risk: LOW
+  final_decision: ACCEPT
+  governance_notes: Verified in-situ rangeland weeds for hard_neg_weed (ID 5) and
+    pasture ground for hard_neg_soil (ID 3).
+- dataset_id: SRC_05_EGOHANDS
+  dataset_name: EgoHands Hand Segmentation Benchmark
+  official_url: http://vision.soic.indiana.edu/projects/egohands/
+  zenodo_doi: NOT_APPLICABLE
+  license: CC BY 4.0
+  license_url: https://creativecommons.org/licenses/by/4.0/
+  total_images_verified: 4800
+  total_annotations_verified: 15053
+  environment: IN_THE_WILD_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 9
+  data_quality_score: 10
+  duplication_risk: LOW
+  leakage_risk: MEDIUM_VIDEO_FRAMES
+  final_decision: ACCEPT
+  governance_notes: Mapped to hard_neg_hand (ID 4). Video sequence grouping strictly
+    enforced across splits to prevent temporal leakage.
+- dataset_id: SRC_06_MENDELEY_TOMATO
+  dataset_name: Mendeley High-Resolution Tomato Disease Dataset
+  official_url: https://data.mendeley.com/datasets/zfv4jj7855/1
+  zenodo_doi: 10.17632/zfv4jj7855.1
+  license: CC BY-SA 4.0
+  license_url: https://creativecommons.org/licenses/by-sa/4.0/
+  total_images_verified: 9100
+  environment: CONTROLLED_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 7
+  data_quality_score: 9
+  duplication_risk: MEDIUM
+  leakage_risk: HIGH_IF_UNGROUPED
+  final_decision: ACCEPT_WITH_FILTERING
+  governance_notes: Primary ingestion source for Powdery Mildew (Oidium neolycopersici
+    - Class ID 3). SHA-256 deduplicated against PlantVillage.
+- dataset_id: SRC_07_COTTONWEEDDET12
+  dataset_name: CottonWeedDet12 Row Crop Weed Detection Dataset
+  official_url: https://universe.roboflow.com/lab-yz5eb/cottonweeddet12
+  zenodo_doi: NOT_APPLICABLE
+  license: CC BY 4.0
+  license_url: https://creativecommons.org/licenses/by/4.0/
+  total_images_verified: 5648
+  total_annotations_verified: 9370
+  environment: IN_THE_WILD_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 10
+  data_quality_score: 9
+  duplication_risk: LOW
+  leakage_risk: LOW
+  final_decision: ACCEPT
+  governance_notes: In-situ agricultural soil furrow background and weed boxes mapped
+    to hard_neg_weed (ID 5).
+- dataset_id: SRC_08_IP102_PEST
+  dataset_name: IP102 Benchmark for Insect Pest Recognition
+  official_url: https://github.com/xpwu95/IP102
+  zenodo_doi: 10.1109/CVPR.2019.00998
+  license: Non-Commercial Academic Research License
+  license_url: https://github.com/xpwu95/IP102/blob/master/LICENSE
+  total_images_verified: 75222
+  solanaceae_pest_subset_images: 1840
+  environment: IN_THE_WILD_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 10
+  data_quality_score: 9
+  duplication_risk: LOW
+  leakage_risk: LOW
+  final_decision: ACCEPT_WITH_FILTERING
+  governance_notes: Filtered strictly to Aphididae and Tetranychidae foliar attacks
+    mapped to Pest Infestation (Class ID 8).
+- dataset_id: SRC_09_OPENSOIL_AGRICULTURE
+  dataset_name: OpenSoil & Agricultural Clutter Background Pool
+  official_url: https://landcover.ai
+  zenodo_doi: 10.5281/zenodo.3897702
+  license: CC BY 4.0 / CC0
+  license_url: https://creativecommons.org/licenses/by/4.0/
+  total_images_verified: 1500
+  environment: IN_THE_WILD_REAL
+  source_verified: true
+  license_verified: true
+  annotation_verified: true
+  taxonomy_compatible: true
+  field_relevance_score: 10
+  data_quality_score: 10
+  duplication_risk: LOW
+  leakage_risk: LOW
+  final_decision: HARD_NEGATIVE_ONLY
+  governance_notes: Used exclusively for background zero-annotation injection and
+    hard_neg_tool / hard_neg_soil anchors.

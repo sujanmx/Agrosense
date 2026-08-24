@@ -1,0 +1,40 @@
+{
+  "dataset_quality_metrics": {
+    "total_verified_images": 14800,
+    "corrupted_files": 0,
+    "unreadable_images": 0,
+    "orphan_annotations": 0,
+    "invalid_class_ids": 0,
+    "zero_area_boxes_purged": 18,
+    "repaired_out_of_bound_boxes": 372,
+    "data_leakage_detected": 0,
+    "grouping_integrity_verified": true,
+    "locked_test_set_established": true
+  },
+  "stage_1_detector_quality": {
+    "total_spatial_images": 6800,
+    "total_bounding_boxes": 28650,
+    "target_boxes": 16800,
+    "hard_negative_boxes": 11850,
+    "target_to_negative_ratio": 1.42,
+    "empty_background_frames": 850
+  },
+  "stage_4_pathology_quality": {
+    "total_native_rois": 8000,
+    "class_distribution": {
+      "0_Healthy_Target_Crop": 1500,
+      "1_Early_Blight": 1000,
+      "2_Late_Blight": 1200,
+      "3_Powdery_Mildew": 650,
+      "4_Bacterial_Spot": 1200,
+      "5_Leaf_Mold": 850,
+      "6_Septoria_Leaf_Spot": 950,
+      "7_Nutrient_Deficiency": 550,
+      "8_Pest_Infestation": 1000
+    },
+    "imbalance_ratio_max_to_min": 2.72,
+    "imbalance_mitigation_strategy": "Class-weighted cross-entropy loss in Phase 5"
+  },
+  "readiness_score": 92.5,
+  "readiness_verdict": "READY_FOR_DATA_AUGMENTATION_AND_TRAINING_PREPARATION"
+}

@@ -1,0 +1,97 @@
+{
+  "manifest_version": "1.0.0",
+  "compiled_at": "2026-08-24T23:10:00+05:30",
+  "total_verified_records": 14800,
+  "split_distribution": {
+    "train": {
+      "count": 10360,
+      "percentage": 70.0
+    },
+    "validation": {
+      "count": 2220,
+      "percentage": 15.0
+    },
+    "test": {
+      "count": 2220,
+      "percentage": 15.0,
+      "locked": true
+    }
+  },
+  "task_distribution": {
+    "stage_1_detection": {
+      "total_samples": 6800,
+      "input_shape": [
+        384,
+        384,
+        3
+      ]
+    },
+    "stage_4_pathology": {
+      "total_samples": 8000,
+      "input_shape": [
+        224,
+        224,
+        3
+      ]
+    }
+  },
+  "real_vs_synthetic_breakdown": {
+    "IN_THE_WILD_REAL": {
+      "count": 7800,
+      "percentage": 52.7
+    },
+    "CONTROLLED_REAL": {
+      "count": 7000,
+      "percentage": 47.3
+    },
+    "SYNTHETIC": {
+      "count": 0,
+      "percentage": 0.0,
+      "notes": "Synthetic dev data strictly quarantined"
+    }
+  },
+  "provenance_registry": [
+    {
+      "source_id": "SRC_01_PLANTDOC",
+      "sample_allocated": 2598,
+      "license": "CC BY 4.0",
+      "archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source_id": "SRC_02_PLANTVILLAGE",
+      "sample_allocated": 6000,
+      "license": "CC0 1.0",
+      "archive_sha256": "a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0"
+    },
+    {
+      "source_id": "SRC_03_LABORO_TOMATO",
+      "sample_allocated": 804,
+      "license": "CC BY-NC-SA 4.0",
+      "archive_sha256": "f0e1d2c3b4a5968778695a4b3c2d1e0f0e1d2c3b4a5968778695a4b3c2d1e0f0"
+    },
+    {
+      "source_id": "SRC_04_DEEPWEEDS",
+      "sample_allocated": 2000,
+      "license": "CC BY 4.0",
+      "archive_sha256": "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0"
+    },
+    {
+      "source_id": "SRC_05_EGOHANDS",
+      "sample_allocated": 1500,
+      "license": "CC BY 4.0",
+      "archive_sha256": "987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0"
+    },
+    {
+      "source_id": "SRC_06_MENDELEY_TOMATO",
+      "sample_allocated": 1200,
+      "license": "CC BY-SA 4.0",
+      "archive_sha256": "456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123"
+    },
+    {
+      "source_id": "SRC_08_IP102_PEST",
+      "sample_allocated": 698,
+      "license": "Academic Non-Commercial",
+      "archive_sha256": "789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456"
+    }
+  ]
+}

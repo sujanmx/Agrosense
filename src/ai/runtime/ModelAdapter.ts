@@ -53,13 +53,25 @@ export interface IModelAdapter {
   classifyPathology(roi: ExtractedROI): Promise<PathologyAnalysisResult>;
 }
 
+interface ORTExternalData {
+  path: string;
+  data: Uint8Array | ArrayBuffer | string;
+}
+
+interface ORTSessionOptions {
+  executionProviders?: string[];
+  graphOptimizationLevel?: string;
+  externalData?: ORTExternalData[];
+  [key: string]: unknown;
+}
+
 interface ORTSession {
   run(feeds: Record<string, unknown>): Promise<Record<string, { data: Float32Array; dims: number[] }>>;
 }
 
 interface ORTNamespace {
   InferenceSession: {
-    create(path: string, options?: unknown): Promise<ORTSession>;
+    create(model: string | ArrayBuffer | Uint8Array, options?: ORTSessionOptions): Promise<ORTSession>;
   };
   Tensor: new (type: string, data: Float32Array, dims: number[]) => unknown;
 }
@@ -75,17 +87,23 @@ export class ONNXModelAdapter implements IModelAdapter {
   private isInitialized = false;
 
   private readonly detectorPath: string;
+  private readonly detectorDataPath: string;
   private readonly classifierPath: string;
+  private readonly classifierDataPath: string;
 
   private detCanvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   private detCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
 
   constructor(
     detectorPath = "/models/target_crop_detector_int8.onnx",
-    classifierPath = "/models/pathology_classifier_int8.onnx"
+    detectorDataPath = "/models/target_crop_detector_int8.onnx.data",
+    classifierPath = "/models/pathology_classifier_int8.onnx",
+    classifierDataPath = "/models/pathology_classifier_int8.onnx.data"
   ) {
     this.detectorPath = detectorPath;
+    this.detectorDataPath = detectorDataPath;
     this.classifierPath = classifierPath;
+    this.classifierDataPath = classifierDataPath;
 
     if (typeof OffscreenCanvas !== "undefined") {
       this.detCanvas = new OffscreenCanvas(384, 384);
@@ -142,9 +160,35 @@ export class ONNXModelAdapter implements IModelAdapter {
       // 3. Initialize Classifier Session (Stage 4)
       if (hasCls) {
         console.log(`[ONNXModelAdapter] 🧠 Loading Neural Classifier from ${this.classifierPath}...`);
-        this.classifierSession = await ort.InferenceSession.create(this.classifierPath, {
+
+        const [clsModelRes, clsDataRes] = await Promise.all([
+          fetch(this.classifierPath),
+          fetch(this.classifierDataPath),
+        ]);
+
+        if (!clsModelRes.ok) {
+          throw new Error(`Failed to fetch classifier graph: HTTP ${clsModelRes.status}`);
+        }
+        if (!clsDataRes.ok) {
+          throw new Error(`Failed to fetch classifier external data: HTTP ${clsDataRes.status}`);
+        }
+
+        const [clsModelBuf, clsDataBuf] = await Promise.all([
+          clsModelRes.arrayBuffer(),
+          clsDataRes.arrayBuffer(),
+        ]);
+
+        const clsDataFilename = this.classifierDataPath.split("/").pop() || "pathology_classifier_int8.onnx.data";
+
+        this.classifierSession = await ort.InferenceSession.create(new Uint8Array(clsModelBuf), {
           executionProviders: ["wasm", "webgl"],
           graphOptimizationLevel: "all",
+          externalData: [
+            {
+              path: clsDataFilename,
+              data: new Uint8Array(clsDataBuf),
+            },
+          ],
         });
         console.log("[ONNXModelAdapter] ✅ Neural Classifier loaded successfully.");
       }
@@ -152,9 +196,35 @@ export class ONNXModelAdapter implements IModelAdapter {
       // 4. Initialize Detector Session (Stage 1)
       if (hasDet) {
         console.log(`[ONNXModelAdapter] 🎯 Loading Neural Detector from ${this.detectorPath}...`);
-        this.detectorSession = await ort.InferenceSession.create(this.detectorPath, {
+
+        const [detModelRes, detDataRes] = await Promise.all([
+          fetch(this.detectorPath),
+          fetch(this.detectorDataPath),
+        ]);
+
+        if (!detModelRes.ok) {
+          throw new Error(`Failed to fetch detector graph: HTTP ${detModelRes.status}`);
+        }
+        if (!detDataRes.ok) {
+          throw new Error(`Failed to fetch detector external data: HTTP ${detDataRes.status}`);
+        }
+
+        const [detModelBuf, detDataBuf] = await Promise.all([
+          detModelRes.arrayBuffer(),
+          detDataRes.arrayBuffer(),
+        ]);
+
+        const detDataFilename = this.detectorDataPath.split("/").pop() || "target_crop_detector_int8.onnx.data";
+
+        this.detectorSession = await ort.InferenceSession.create(new Uint8Array(detModelBuf), {
           executionProviders: ["wasm", "webgl"],
           graphOptimizationLevel: "all",
+          externalData: [
+            {
+              path: detDataFilename,
+              data: new Uint8Array(detDataBuf),
+            },
+          ],
         });
         console.log("[ONNXModelAdapter] ✅ Neural Detector loaded successfully.");
       }

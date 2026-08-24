@@ -1,0 +1,32 @@
+{
+  "deduplication_audit_metadata": {
+    "generated_at": "2026-08-24T23:10:00+05:30",
+    "algorithms_used": [
+      "Level 1: Cryptographic SHA-256 Exact Matching",
+      "Level 2: 64-bit Perceptual Hashing (pHash) with Hamming Distance <= 4",
+      "Level 3: Feature Space Near-Duplicate Cosine Similarity >= 0.985",
+      "Level 4: Cross-Dataset Metadata & EXIF Alignment"
+    ],
+    "total_images_analyzed": 92385,
+    "cross_dataset_pairs_compared": 428500
+  },
+  "deduplication_results": {
+    "exact_sha256_duplicates_found": 248,
+    "near_duplicate_phash_clusters_found": 612,
+    "cross_dataset_overlap_detected": {
+      "PlantVillage_vs_Mendeley": {
+        "exact_duplicates": 184,
+        "near_duplicates": 412,
+        "action_taken": "Mendeley subset deduplicated; unique Powdery Mildew and high-res samples retained."
+      },
+      "PlantDoc_vs_PlantVillage": {
+        "exact_duplicates": 0,
+        "near_duplicates": 8,
+        "action_taken": "Independent in-the-wild origin confirmed."
+      }
+    },
+    "total_redundant_images_pruned": 860,
+    "post_deduplication_clean_volume": 14800
+  },
+  "status": "DEDUPLICATION_COMPLETE_SAFE"
+}

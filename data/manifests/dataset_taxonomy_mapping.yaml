@@ -1,0 +1,268 @@
+manifest_metadata:
+  version: 2.0.0
+  generated_at: '2026-08-24T23:10:00+05:30'
+  contract_integrity: LOCKED_IMMUTABLE
+stage_1_detector_mapping:
+  input_resolution:
+  - 384
+  - 384
+  coordinate_format: YOLO_NORMALIZED [class_id, cx, cy, w, h]
+  classes:
+  - canonical_id: 0
+    canonical_label: target_crop_canopy
+    entity_type: TARGET_CROP_CANOPY
+    is_target: true
+    source_mappings:
+    - source: PlantDoc
+      source_label: tomato_canopy
+      decision: EXACT
+    - source: LaboroTomato
+      source_label: tomato_bush
+      decision: ALIAS
+  - canonical_id: 1
+    canonical_label: target_crop_leaf
+    entity_type: TARGET_CROP_LEAF
+    is_target: true
+    source_mappings:
+    - source: PlantDoc
+      source_label: Tomato leaf
+      decision: EXACT
+    - source: PlantDoc
+      source_label: Tomato Early blight leaf
+      decision: SUBSET
+    - source: PlantDoc
+      source_label: Tomato Late blight leaf
+      decision: SUBSET
+    - source: PlantDoc
+      source_label: Tomato Septoria leaf spot
+      decision: SUBSET
+    - source: PlantDoc
+      source_label: Tomato leaf mold
+      decision: SUBSET
+    - source: PlantDoc
+      source_label: Tomato leaf yellow virus
+      decision: SUBSET
+    - source: PlantDoc
+      source_label: Tomato leaf bacterial spot
+      decision: SUBSET
+  - canonical_id: 2
+    canonical_label: target_crop_fruit
+    entity_type: TARGET_CROP_FRUIT
+    is_target: true
+    source_mappings:
+    - source: PlantDoc
+      source_label: Tomato fruit
+      decision: EXACT
+    - source: LaboroTomato
+      source_label: b_fully_ripened
+      decision: SUBSET
+    - source: LaboroTomato
+      source_label: b_half_ripened
+      decision: SUBSET
+    - source: LaboroTomato
+      source_label: b_green
+      decision: SUBSET
+    - source: LaboroTomato
+      source_label: l_fully_ripened
+      decision: SUBSET
+    - source: LaboroTomato
+      source_label: l_half_ripened
+      decision: SUBSET
+    - source: LaboroTomato
+      source_label: l_green
+      decision: SUBSET
+  - canonical_id: 3
+    canonical_label: hard_neg_soil
+    entity_type: HARD_NEGATIVE_SOIL
+    is_target: false
+    source_mappings:
+    - source: DeepWeeds
+      source_label: negatives_soil
+      decision: EXACT
+    - source: CottonWeedDet12
+      source_label: dirt_furrow
+      decision: ALIAS
+    - source: OpenSoil
+      source_label: bare_soil_clay
+      decision: EXACT
+  - canonical_id: 4
+    canonical_label: hard_neg_hand
+    entity_type: HARD_NEGATIVE_HAND
+    is_target: false
+    source_mappings:
+    - source: EgoHands
+      source_label: hand
+      decision: EXACT
+    - source: EgoHands
+      source_label: left_hand
+      decision: EXACT
+    - source: EgoHands
+      source_label: right_hand
+      decision: EXACT
+    - source: EgoHands
+      source_label: glove
+      decision: ALIAS
+  - canonical_id: 5
+    canonical_label: hard_neg_weed
+    entity_type: NON_TARGET_FLORA
+    is_target: false
+    source_mappings:
+    - source: DeepWeeds
+      source_label: Chinee apple
+      decision: SUBSET
+    - source: DeepWeeds
+      source_label: Snake weed
+      decision: SUBSET
+    - source: DeepWeeds
+      source_label: Lantana
+      decision: SUBSET
+    - source: DeepWeeds
+      source_label: Prickly acacia
+      decision: SUBSET
+    - source: DeepWeeds
+      source_label: Siam weed
+      decision: SUBSET
+    - source: DeepWeeds
+      source_label: Parthenium
+      decision: SUBSET
+    - source: DeepWeeds
+      source_label: Rubber vine
+      decision: SUBSET
+    - source: DeepWeeds
+      source_label: Parkinsonia
+      decision: SUBSET
+    - source: CottonWeedDet12
+      source_label: all_weed_classes
+      decision: SUPERSET
+  - canonical_id: 6
+    canonical_label: hard_neg_tool
+    entity_type: HARD_NEGATIVE_TOOL
+    is_target: false
+    source_mappings:
+    - source: OpenSoil
+      source_label: mulch_film
+      decision: EXACT
+    - source: OpenSoil
+      source_label: drip_pipe
+      decision: EXACT
+    - source: OpenSoil
+      source_label: metal_stake
+      decision: EXACT
+    - source: OpenSoil
+      source_label: pruner_shears
+      decision: EXACT
+stage_4_pathology_mapping:
+  input_resolution:
+  - 224
+  - 224
+  temperature_scaling: 1.35
+  energy_ood_threshold: -4.5
+  classes:
+  - canonical_id: 0
+    canonical_label: Healthy Target Crop
+    etiology: Asymptomatic vigorous foliage
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___healthy
+      decision: EXACT
+    - source: PlantDoc
+      source_label: Tomato leaf
+      decision: EXACT
+    - source: Mendeley
+      source_label: Healthy
+      decision: EXACT
+  - canonical_id: 1
+    canonical_label: Early Blight (Alternaria solani)
+    etiology: Alternaria solani
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___Early_blight
+      decision: EXACT
+    - source: PlantDoc
+      source_label: Tomato Early blight leaf
+      decision: EXACT
+    - source: Mendeley
+      source_label: Early Blight
+      decision: EXACT
+  - canonical_id: 2
+    canonical_label: Late Blight (Phytophthora infestans)
+    etiology: Phytophthora infestans
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___Late_blight
+      decision: EXACT
+    - source: PlantDoc
+      source_label: Tomato Late blight leaf
+      decision: EXACT
+    - source: Mendeley
+      source_label: Late Blight
+      decision: EXACT
+  - canonical_id: 3
+    canonical_label: Powdery Mildew (Oidium neolycopersici)
+    etiology: Oidium neolycopersici
+    source_mappings:
+    - source: Mendeley
+      source_label: Tomato Powdery Mildew
+      decision: EXACT
+    - source: PlantVillage
+      source_label: Squash___Powdery_mildew
+      decision: SUPERSET_DOMAIN_TRANSFER
+  - canonical_id: 4
+    canonical_label: Bacterial Spot (Xanthomonas)
+    etiology: Xanthomonas perforans
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___Bacterial_spot
+      decision: EXACT
+    - source: PlantDoc
+      source_label: Tomato Bacterial spot leaf
+      decision: EXACT
+    - source: Mendeley
+      source_label: Bacterial Spot
+      decision: EXACT
+  - canonical_id: 5
+    canonical_label: Leaf Mold (Passalora fulva)
+    etiology: Passalora fulva
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___Leaf_Mold
+      decision: EXACT
+    - source: PlantDoc
+      source_label: Tomato leaf mold
+      decision: EXACT
+    - source: Mendeley
+      source_label: Leaf Mold
+      decision: EXACT
+  - canonical_id: 6
+    canonical_label: Septoria Leaf Spot
+    etiology: Septoria lycopersici
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___Septoria_leaf_spot
+      decision: EXACT
+    - source: PlantDoc
+      source_label: Tomato Septoria leaf spot
+      decision: EXACT
+    - source: Mendeley
+      source_label: Septoria
+      decision: EXACT
+  - canonical_id: 7
+    canonical_label: Nutrient Deficiency (Nitrogen/Potassium)
+    etiology: Abiotic chlorosis & marginal burn
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___Tomato_Yellow_Leaf_Curl_Virus
+      decision: CURATED_CHLOROSIS_SUBSET
+    - source: Mendeley
+      source_label: Tomato Deficiency Chlorosis
+      decision: EXACT
+  - canonical_id: 8
+    canonical_label: Pest Infestation (Aphids/Mites)
+    etiology: Tetranychus urticae / Aphis gossypii
+    source_mappings:
+    - source: PlantVillage
+      source_label: Tomato___Spider_mites Two-spotted_spider_mite
+      decision: EXACT
+    - source: IP102
+      source_label: Aphidoidea_Tetranychidae_crops
+      decision: EXACT
