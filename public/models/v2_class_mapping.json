@@ -1,0 +1,28 @@
+{
+  "version": "v2",
+  "taxonomy_version": "09B",
+  "total_pathology_classes": 9,
+  "pathology_classes": {
+    "0": "Healthy Target Crop",
+    "1": "Early Blight (Alternaria solani)",
+    "2": "Late Blight (Phytophthora infestans)",
+    "3": "Powdery Mildew (Oidium neolycopersici)",
+    "4": "Bacterial Spot (Xanthomonas)",
+    "5": "Leaf Mold (Passalora fulva)",
+    "6": "Septoria Leaf Spot",
+    "7": "Nutrient Deficiency (Nitrogen/Potassium)",
+    "8": "Pest Infestation (Aphids/Mites)"
+  },
+  "powdery_mildew_verified_index": 3,
+  "powdery_mildew_verified_name": "Powdery Mildew (Oidium neolycopersici)",
+  "total_detector_classes": 7,
+  "detector_classes": {
+    "0": "target_crop_canopy",
+    "1": "target_crop_leaf",
+    "2": "target_crop_fruit",
+    "3": "hard_neg_soil",
+    "4": "hard_neg_hand",
+    "5": "hard_neg_weed",
+    "6": "hard_neg_tool"
+  }
+}

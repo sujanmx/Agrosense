@@ -22,3 +22,26 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ML datasets
+data/raw/
+data/processed/
+
+# Training artifacts
+training/runs/
+artifacts/
+backups/
+
+# Large source archives
+*.7z
+*.zip
+
+# Dataset manifests
+data/manifests/train.jsonl
+data/manifests/validation.jsonl
+data/manifests/test.jsonl
+data/manifests/v2/
+data/manifests/normalized_images.jsonl
+data/manifests/src06_tlid_provenance.jsonl
+data/manifests/dataset_sources.json
+

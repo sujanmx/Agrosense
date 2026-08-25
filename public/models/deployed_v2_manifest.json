@@ -1,0 +1,27 @@
+{
+  "version": "v2",
+  "deployment_timestamp": "2026-08-25T23:15:34Z",
+  "models": {
+    "classifier": {
+      "filename": "classifier_v2.onnx",
+      "rel_path": "public\\models\\classifier_v2.onnx",
+      "size_bytes": 4466816,
+      "sha256": "de4c21aaaa8ec58d3a8035107e8ec716aa67d494d679d4fd398576d67669bbbd",
+      "mtime": "2026-08-26 04:42:21"
+    },
+    "detector": {
+      "filename": "detector_v2.onnx",
+      "rel_path": "public\\models\\detector_v2.onnx",
+      "size_bytes": 9040025,
+      "sha256": "d9bc7b5bea441f6256dabbb58b2f2142ab41ae5a93941e435dafe4fb19fc1c4b",
+      "mtime": "2026-08-26 04:42:21"
+    },
+    "class_mapping": {
+      "filename": "v2_class_mapping.json",
+      "rel_path": "public\\models\\v2_class_mapping.json",
+      "size_bytes": 891,
+      "sha256": "dcd4aa85e6ca3bbe2cea8eb091ab576991a4a16bac8b23cf97d0e9d62a9d0727",
+      "mtime": "2026-08-26 04:42:25"
+    }
+  }
+}
