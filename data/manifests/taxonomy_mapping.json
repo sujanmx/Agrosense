@@ -1,0 +1,368 @@
+{
+  "mapping_version": "1.0.0",
+  "standard": "ISO/IEC 5259 Data Quality for ML",
+  "generated_at": "2026-08-26T03:07:54+05:30",
+  "total_mappings": 40,
+  "mappings": [
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato leaf",
+      "canonical_label": "HEALTHY_TARGET_CROP",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.98,
+      "mapping_reason": "Botanical match: Asymptomatic healthy foliage of Solanum lycopersicum.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato Early blight leaf",
+      "canonical_label": "EARLY_BLIGHT",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.99,
+      "mapping_reason": "Etiological match: Alternaria solani foliar lesions with concentric rings.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato Late blight leaf",
+      "canonical_label": "LATE_BLIGHT",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.99,
+      "mapping_reason": "Etiological match: Phytophthora infestans water-soaked necrotic lesions.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato Septoria leaf spot",
+      "canonical_label": "SEPTORIA_LEAF_SPOT",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.99,
+      "mapping_reason": "Etiological match: Septoria lycopersici circular punctate pycnidia spots.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato mold leaf",
+      "canonical_label": "LEAF_MOLD",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.98,
+      "mapping_reason": "Etiological match: Passalora fulva olive-green velvety foliar mold.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato leaf bacterial spot",
+      "canonical_label": "BACTERIAL_SPOT",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.98,
+      "mapping_reason": "Etiological match: Xanthomonas perforans greasy angular foliar specks.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato two spotted spider mites leaf",
+      "canonical_label": "PEST_INFESTATION",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.97,
+      "mapping_reason": "Entomological match: Tetranychus urticae feeding stippling and webbing.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato fruit",
+      "canonical_label": "TARGET_CROP_FRUIT",
+      "target_stage": "Stage 1 Detector Fruit",
+      "mapping_confidence": 0.99,
+      "mapping_reason": "Organ match: Solanum lycopersicum green/ripe developing fruit.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato leaf yellow virus",
+      "canonical_label": "UNMAPPED",
+      "target_stage": "Stage 5 OOD Quarantine",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Viral etiology not part of 9 canonical classes; quarantined for OOD evaluation.",
+      "review_status": "QUARANTINED_OOD"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Tomato leaf mosaic virus",
+      "canonical_label": "UNMAPPED",
+      "target_stage": "Stage 5 OOD Quarantine",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Tobamovirus not part of 9 canonical classes; quarantined for OOD evaluation.",
+      "review_status": "QUARANTINED_OOD"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Potato leaf",
+      "canonical_label": "TARGET_CROP_LEAF",
+      "target_stage": "Stage 1 Solanaceae Foliage",
+      "mapping_confidence": 0.95,
+      "mapping_reason": "Solanaceae family congeneric foliage; matches target plant organ morphology.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Potato leaf early blight",
+      "canonical_label": "EARLY_BLIGHT",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.96,
+      "mapping_reason": "Etiological match: Identical fungal pathogen Alternaria solani on Solanaceae.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Potato leaf late blight",
+      "canonical_label": "LATE_BLIGHT",
+      "target_stage": "Stage 4 Pathology & Stage 1 Leaf",
+      "mapping_confidence": 0.96,
+      "mapping_reason": "Etiological match: Identical oomycete Phytophthora infestans on Solanaceae.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Squash Powdery mildew leaf",
+      "canonical_label": "POWDERY_MILDEW",
+      "target_stage": "Stage 4 Pathology & Stage 1 Weed",
+      "mapping_confidence": 0.92,
+      "mapping_reason": "Phenotypic match: Ectophytic powdery mycelial bloom covering adaxial leaf blade.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Bell_pepper leaf",
+      "canonical_label": "HARD_NEGATIVE_WEED",
+      "target_stage": "Stage 1 Non-Target Flora",
+      "mapping_confidence": 0.94,
+      "mapping_reason": "Non-target crop flora used as negative distractor against tomato target detection.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Corn rust leaf",
+      "canonical_label": "HARD_NEGATIVE_WEED",
+      "target_stage": "Stage 1 Non-Target Flora",
+      "mapping_confidence": 0.98,
+      "mapping_reason": "Monocot poaceae non-target flora; used to train detector background rejection.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_01_PLANTDOC",
+      "original_label": "Apple leaf",
+      "canonical_label": "HARD_NEGATIVE_WEED",
+      "target_stage": "Stage 1 Non-Target Flora",
+      "mapping_confidence": 0.98,
+      "mapping_reason": "Tree foliage non-target flora; used to train detector background rejection.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___healthy",
+      "canonical_label": "HEALTHY_TARGET_CROP",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct laboratory ground truth: Uninfected healthy tomato leaflet.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Early_blight",
+      "canonical_label": "EARLY_BLIGHT",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct laboratory ground truth: Alternaria solani fungal infection.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Late_blight",
+      "canonical_label": "LATE_BLIGHT",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct laboratory ground truth: Phytophthora infestans oomycete infection.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Bacterial_spot",
+      "canonical_label": "BACTERIAL_SPOT",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct laboratory ground truth: Xanthomonas foliar spot infection.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Leaf_Mold",
+      "canonical_label": "LEAF_MOLD",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct laboratory ground truth: Passalora fulva fungal leaf mold.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Septoria_leaf_spot",
+      "canonical_label": "SEPTORIA_LEAF_SPOT",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct laboratory ground truth: Septoria lycopersici fungal spot.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Spider_mites Two-spotted_spider_mite",
+      "canonical_label": "PEST_INFESTATION",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct laboratory ground truth: Tetranychus urticae mite feeding injury.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Target_Spot",
+      "canonical_label": "UNMAPPED",
+      "target_stage": "Stage 5 OOD Quarantine",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Corynespora cassiicola excluded from 9-class schema; quarantined for OOD evaluation.",
+      "review_status": "QUARANTINED_OOD"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "canonical_label": "UNMAPPED",
+      "target_stage": "Stage 5 OOD Quarantine",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Viral curl excluded from 9-class schema; quarantined for OOD evaluation.",
+      "review_status": "QUARANTINED_OOD"
+    },
+    {
+      "dataset_id": "SRC_02_PLANTVILLAGE",
+      "original_label": "Tomato___Tomato_mosaic_virus",
+      "canonical_label": "UNMAPPED",
+      "target_stage": "Stage 5 OOD Quarantine",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Tobamovirus excluded from 9-class schema; quarantined for OOD evaluation.",
+      "review_status": "QUARANTINED_OOD"
+    },
+    {
+      "dataset_id": "SRC_03_LABORO_TOMATO",
+      "original_label": "b_fully_ripened",
+      "canonical_label": "TARGET_CROP_FRUIT",
+      "target_stage": "Stage 1 Detector Fruit",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct agronomic annotation: Big fully ripened red tomato fruit.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_03_LABORO_TOMATO",
+      "original_label": "b_half_ripened",
+      "canonical_label": "TARGET_CROP_FRUIT",
+      "target_stage": "Stage 1 Detector Fruit",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct agronomic annotation: Big half-ripened orange tomato fruit.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_03_LABORO_TOMATO",
+      "original_label": "b_green",
+      "canonical_label": "TARGET_CROP_FRUIT",
+      "target_stage": "Stage 1 Detector Fruit",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct agronomic annotation: Big unripe green tomato fruit.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_03_LABORO_TOMATO",
+      "original_label": "tomato_bush",
+      "canonical_label": "TARGET_CROP_CANOPY",
+      "target_stage": "Stage 1 Detector Canopy",
+      "mapping_confidence": 0.98,
+      "mapping_reason": "Direct greenhouse annotation: Whole tomato trellis canopy background.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_04_DEEPWEEDS",
+      "original_label": "Negatives",
+      "canonical_label": "HARD_NEGATIVE_SOIL",
+      "target_stage": "Stage 1 Detector Soil",
+      "mapping_confidence": 0.99,
+      "mapping_reason": "Direct benchmark label: Bare soil, rangeland ground, gravel, and mud.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_04_DEEPWEEDS",
+      "original_label": "Chinee apple",
+      "canonical_label": "HARD_NEGATIVE_WEED",
+      "target_stage": "Stage 1 Detector Weed",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Invasive weed species (Ziziphus mauritiana) in-situ field flora.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_04_DEEPWEEDS",
+      "original_label": "Lantana",
+      "canonical_label": "HARD_NEGATIVE_WEED",
+      "target_stage": "Stage 1 Detector Weed",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Invasive weed species (Lantana camara) in-situ field flora.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_04_DEEPWEEDS",
+      "original_label": "Parthenium",
+      "canonical_label": "HARD_NEGATIVE_WEED",
+      "target_stage": "Stage 1 Detector Weed",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Invasive weed species (Parthenium hysterophorus) in-situ field flora.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_05_EGOHANDS",
+      "original_label": "hand",
+      "canonical_label": "HARD_NEGATIVE_HAND",
+      "target_stage": "Stage 1 Detector Hand",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Egocentric operator hand segmentation and bounding box ground truth.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_05_EGOHANDS",
+      "original_label": "own_left_hand",
+      "canonical_label": "HARD_NEGATIVE_HAND",
+      "target_stage": "Stage 1 Detector Hand",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Operator left hand bounding box ground truth.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_05_EGOHANDS",
+      "original_label": "own_right_hand",
+      "canonical_label": "HARD_NEGATIVE_HAND",
+      "target_stage": "Stage 1 Detector Hand",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Operator right hand bounding box ground truth.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_06_MENDELEY_TOMATO",
+      "original_label": "Tomato_Powdery_Mildew",
+      "canonical_label": "POWDERY_MILDEW",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 1.0,
+      "mapping_reason": "Direct high-res field label: Oidium neolycopersici infection on tomato leaves.",
+      "review_status": "APPROVED"
+    },
+    {
+      "dataset_id": "SRC_06_MENDELEY_TOMATO",
+      "original_label": "Nutrient_Chlorosis",
+      "canonical_label": "NUTRIENT_DEFICIENCY",
+      "target_stage": "Stage 4 Pathology",
+      "mapping_confidence": 0.98,
+      "mapping_reason": "Physiological chlorosis indicating nitrogen/potassium nutrient deficiency.",
+      "review_status": "APPROVED"
+    }
+  ]
+}

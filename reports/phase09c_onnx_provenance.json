@@ -1,0 +1,136 @@
+{
+  "document_id": "ONNX-PROVENANCE-PHASE09C-V2",
+  "timestamp": "2026-08-25T23:12:25Z",
+  "environment": {
+    "python_version": "3.13.7",
+    "torch_version": "2.13.0+cpu",
+    "onnx_version": "1.22.0",
+    "onnxruntime_version": "1.29.0",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "models": {
+    "classifier_v2": {
+      "source_pytorch_checkpoint": {
+        "path": "C:\\Users\\sujan\\Downloads\\sih2 - Copy\\training\\runs\\run_20260826_041503_real_phase09b8g_v2\\classifier_v2_best.pt",
+        "filename": "classifier_v2_best.pt",
+        "size_bytes": 4590777,
+        "sha256": "b3a12236dcf3bea907a6e2448ad30da61fa54d47336899839f56d69f48c7f06a",
+        "mtime": "2026-08-26 04:31:19"
+      },
+      "exported_onnx_model": {
+        "path": "C:\\Users\\sujan\\Downloads\\sih2 - Copy\\training\\runs\\run_20260826_041503_real_phase09b8g_v2\\onnx_v2\\classifier_v2.onnx",
+        "filename": "classifier_v2.onnx",
+        "size_bytes": 4466816,
+        "sha256": "de4c21aaaa8ec58d3a8035107e8ec716aa67d494d679d4fd398576d67669bbbd",
+        "mtime": "2026-08-26 04:42:21"
+      },
+      "opset_version": 17,
+      "input_spec": {
+        "name": "input_rgb",
+        "shape": [
+          "batch_size",
+          3,
+          224,
+          224
+        ],
+        "type": "tensor(float)"
+      },
+      "output_specs": [
+        {
+          "name": "logits",
+          "shape": [
+            "batch_size",
+            9
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "severity",
+          "shape": [
+            "batch_size",
+            1
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "numerical_equivalence": {
+        "logits_max_abs_diff": 2.765655517578125e-05,
+        "logits_mean_abs_diff": 4.035087386000669e-06,
+        "severity_max_abs_diff": 4.6193599700927734e-07,
+        "severity_mean_abs_diff": 4.702855349592028e-08,
+        "argmax_top1_match_pct": 100.0,
+        "mean_cosine_similarity": 1.0
+      },
+      "performance_benchmark": {
+        "mean_latency_ms": 1.9631240000308026,
+        "std_latency_ms": 0.45490036617808305,
+        "p50_latency_ms": 1.96455000059359,
+        "p95_latency_ms": 2.538075000029494,
+        "p99_latency_ms": 3.144135000529793,
+        "throughput_fps": 509.39217287563565
+      }
+    },
+    "detector_v2": {
+      "source_pytorch_checkpoint": {
+        "path": "C:\\Users\\sujan\\Downloads\\sih2 - Copy\\training\\runs\\run_20260826_041503_real_phase09b8g_v2\\detector_v2_best.pt",
+        "filename": "detector_v2_best.pt",
+        "size_bytes": 9166980,
+        "sha256": "72accfaebc554ea0dd48c919dd7059880b34807bc618ce617e913d100750ae28",
+        "mtime": "2026-08-26 04:37:33"
+      },
+      "exported_onnx_model": {
+        "path": "C:\\Users\\sujan\\Downloads\\sih2 - Copy\\training\\runs\\run_20260826_041503_real_phase09b8g_v2\\onnx_v2\\detector_v2.onnx",
+        "filename": "detector_v2.onnx",
+        "size_bytes": 9040025,
+        "sha256": "d9bc7b5bea441f6256dabbb58b2f2142ab41ae5a93941e435dafe4fb19fc1c4b",
+        "mtime": "2026-08-26 04:42:21"
+      },
+      "opset_version": 17,
+      "input_spec": {
+        "name": "input_rgb",
+        "shape": [
+          "batch_size",
+          3,
+          384,
+          384
+        ],
+        "type": "tensor(float)"
+      },
+      "output_specs": [
+        {
+          "name": "boxes",
+          "shape": [
+            "batch_size",
+            144,
+            4
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "scores",
+          "shape": [
+            "batch_size",
+            144,
+            7
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "numerical_equivalence": {
+        "boxes_max_abs_diff": 1.6987323760986328e-06,
+        "boxes_mean_abs_diff": 5.964324145679711e-08,
+        "scores_max_abs_diff": 9.59634780883789e-06,
+        "scores_mean_abs_diff": 7.597616331622703e-07,
+        "mean_cosine_similarity": 1.0
+      },
+      "performance_benchmark": {
+        "mean_latency_ms": 4.718310999942332,
+        "std_latency_ms": 0.7788234933346444,
+        "p50_latency_ms": 4.81839999974909,
+        "p95_latency_ms": 5.637955000656802,
+        "p99_latency_ms": 6.58741699902749,
+        "throughput_fps": 211.94024726479924
+      }
+    }
+  }
+}

@@ -34,10 +34,14 @@ export interface TelemetryPayload {
 
 export type InferenceStatus =
   | "idle"
+  | "ready"
   | "awaiting_permission"
-  | "initializing"
+  | "capturing"
   | "analyzing"
   | "active"
+  | "success"
+  | "no_plant"
+  | "unknown"
   | "error"
   | "permission_denied";
 
@@ -54,6 +58,18 @@ export interface DiagnosisResult {
   isAnomaly: boolean;
   boundingBox: BoundingBox | null;
   timestamp: Date;
+  // Canonical Phase 10 fields:
+  provider?: "gemini" | "onnx";
+  plantSpecies?: string | null;
+  diseaseClassId?: number | null;
+  diseaseClass?: string;
+  scientificName?: string | null;
+  severity?: "none" | "mild" | "moderate" | "severe" | "unknown";
+  visualEvidence?: string;
+  recommendation?: string;
+  latencyMs?: number;
+  plantDetected?: boolean;
+  leafDetected?: boolean;
 }
 
 /** Severity level derived from the diagnosis */

@@ -1,4 +1,4 @@
-import { useAppStore } from "@/store";
+﻿import { useAppStore } from "@/store";
 import {
   DiagnosticBadge,
   deriveSeverity,
@@ -6,49 +6,52 @@ import {
   hedgeLabel,
 } from "@/components/DiagnosticBadge";
 import { Badge } from "@/components/ui/badge";
-import { Cpu, BarChart3 } from "lucide-react";
+import { Sparkles, BarChart3, Clock } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────
-// AIOverlay — bounding box + diagnostic badge over the video
+// AIOverlay — bounding box + diagnostic badge over the video/image
 // ────────────────────────────────────────────────────────────────
 //
-// Design principles:
-//   - Plant remains the visual hero; overlays are restrained
-//   - Bounding boxes use normalized coordinates (0–1) for resize safety
-//   - Confidence tier affects visual treatment (solid/dashed/dotted)
-//   - Labels on bounding boxes are compact and positioned at the top
+// Rules:
+//   - Bounding boxes strictly use validated normalized coordinates [0.0, 1.0]
+//   - If provider returned null for boundingBox, NO box is drawn (fail-closed)
+//   - Box is explicitly labeled with provider identity ("Gemini Vision" / "ONNX Detector")
+//   - Confidence tier controls visual treatment (solid/dashed/dotted)
 
 export function AIOverlay() {
   const diagnosis = useAppStore((s) => s.currentDiagnosis);
-  const inferenceCount = useAppStore((s) => s.inferenceCount);
   const renderCount = useAppStore((s) => s.renderCount);
   const inferenceStatus = useAppStore((s) => s.inferenceStatus);
 
-  if (!diagnosis && inferenceStatus !== "active") return null;
+  if (!diagnosis && inferenceStatus !== "active" && inferenceStatus !== "success") return null;
+
+  const providerName = diagnosis?.provider === "onnx" ? "ONNX Detector" : "Gemini Vision";
 
   const severity = diagnosis
-    ? deriveSeverity(diagnosis.label, diagnosis.confidence)
+    ? (diagnosis.severity === "severe"
+        ? "critical"
+        : diagnosis.severity === "moderate" || diagnosis.severity === "mild"
+          ? "warning"
+          : deriveSeverity(diagnosis.label, diagnosis.confidence))
     : "healthy";
 
   const tier = diagnosis
     ? deriveConfidenceTier(diagnosis.confidence)
     : "high";
 
-  // Border color based on severity — only for the viewport frame
+  // Border color based on severity
   const frameBorderColor = {
     healthy: "border-emerald-500/30",
     warning: "border-amber-500/30",
     critical: "border-red-500/40",
   }[severity];
 
-  // Bounding box border — more visible than frame
   const boxBorderColor = {
-    healthy: "border-emerald-500/60",
-    warning: "border-amber-500/60",
-    critical: "border-red-500/70",
+    healthy: "border-emerald-500/80",
+    warning: "border-amber-500/80",
+    critical: "border-red-500/90",
   }[severity];
 
-  // Bounding box border style based on confidence tier
   const boxBorderStyle = {
     high: "",
     medium: "",
@@ -56,7 +59,6 @@ export function AIOverlay() {
     insufficient: "border-dotted",
   }[tier];
 
-  // Box text color
   const boxTextColor = {
     healthy: "text-emerald-400",
     warning: "text-amber-400",
@@ -64,16 +66,16 @@ export function AIOverlay() {
   }[severity];
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {/* ── Bounding box (if present) ───────────────────────── */}
+    <div className="absolute inset-0 pointer-events-none z-20">
+      {/* ── Bounding box (strictly from provider output; NO fake box) ───────── */}
       {diagnosis?.boundingBox && (
         <div
-          className={`absolute border-2 rounded-sm transition-all duration-300 ${boxBorderColor} ${boxBorderStyle}`}
+          className={`absolute border-2 rounded-sm transition-all duration-300 ${boxBorderColor} ${boxBorderStyle} shadow-[0_0_12px_rgba(0,0,0,0.5)]`}
           style={{
-            left: `${diagnosis.boundingBox.x * 100}%`,
-            top: `${diagnosis.boundingBox.y * 100}%`,
-            width: `${diagnosis.boundingBox.width * 100}%`,
-            height: `${diagnosis.boundingBox.height * 100}%`,
+            left: `${Math.max(0, Math.min(100, diagnosis.boundingBox.x * 100))}%`,
+            top: `${Math.max(0, Math.min(100, diagnosis.boundingBox.y * 100))}%`,
+            width: `${Math.max(2, Math.min(100, diagnosis.boundingBox.width * 100))}%`,
+            height: `${Math.max(2, Math.min(100, diagnosis.boundingBox.height * 100))}%`,
           }}
         >
           {/* Corner markers */}
@@ -85,22 +87,21 @@ export function AIOverlay() {
           {/* Inline label — anchored to top of bounding box */}
           <div className="absolute -top-6 left-0 flex items-center gap-1">
             <span
-              className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-sm backdrop-blur-sm bg-zinc-900/80 ${boxTextColor}`}
+              className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-sm backdrop-blur-md bg-zinc-950/90 border border-border/40 ${boxTextColor}`}
             >
-              {hedgeLabel(diagnosis.label, tier)}
+              {providerName}: {hedgeLabel(diagnosis.label, tier)}
             </span>
-            <span className="text-[8px] font-mono text-muted-foreground bg-zinc-900/70 px-1 py-0.5 rounded-sm backdrop-blur-sm">
-              {(diagnosis.confidence * 100).toFixed(0)}%
+            <span className="text-[8px] font-mono text-zinc-300 bg-zinc-950/80 px-1 py-0.5 rounded-sm backdrop-blur-md border border-border/30">
+              {(diagnosis.confidence * 100).toFixed(1)}% conf
             </span>
           </div>
         </div>
       )}
 
-      {/* ── Subtle status border (full viewport) ──────────────
-           Only shown for anomaly detections — keeps calm otherwise */}
+      {/* ── Subtle status border (full viewport on anomaly) ── */}
       {diagnosis?.isAnomaly && (
         <div
-          className={`absolute inset-0 border rounded-lg transition-colors duration-500 ${frameBorderColor}`}
+          className={`absolute inset-0 border-2 rounded-lg transition-colors duration-500 ${frameBorderColor} pointer-events-none`}
         />
       )}
 
@@ -115,36 +116,32 @@ export function AIOverlay() {
         </div>
       )}
 
-      {/* ── Performance counters (top-right) ────────────────── */}
-      <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
+      {/* ── Engine & Latency badge (top-right) ─────────────── */}
+      <div className="absolute top-3 right-3 flex flex-col gap-1 items-end pointer-events-auto">
         <Badge
           variant="outline"
-          className="text-[9px] gap-1 border-zinc-700/50 bg-zinc-900/80 text-zinc-400 backdrop-blur-sm font-mono"
+          className="text-[9px] gap-1 border-emerald-500/40 bg-zinc-950/90 text-emerald-400 backdrop-blur-md font-mono"
         >
-          <Cpu className="h-2.5 w-2.5" />
-          INF: {inferenceCount}
+          <Sparkles className="h-2.5 w-2.5" />
+          {providerName.toUpperCase()}
         </Badge>
+        {diagnosis?.latencyMs !== undefined && diagnosis.latencyMs > 0 && (
+          <Badge
+            variant="outline"
+            className="text-[9px] gap-1 border-zinc-700/50 bg-zinc-950/80 text-zinc-400 backdrop-blur-md font-mono"
+          >
+            <Clock className="h-2.5 w-2.5" />
+            {diagnosis.latencyMs} ms
+          </Badge>
+        )}
         <Badge
           variant="outline"
-          className="text-[9px] gap-1 border-zinc-700/50 bg-zinc-900/80 text-zinc-400 backdrop-blur-sm font-mono"
+          className="text-[9px] gap-1 border-zinc-700/50 bg-zinc-950/80 text-zinc-400 backdrop-blur-md font-mono"
         >
           <BarChart3 className="h-2.5 w-2.5" />
           RND: {renderCount}
         </Badge>
       </div>
-
-      {/* ── Analyzing indicator (top-left) ──────────────────── */}
-      {inferenceStatus === "active" && (
-        <div className="absolute top-3 left-3">
-          <Badge
-            variant="outline"
-            className="text-[9px] gap-1.5 border-emerald-500/20 bg-zinc-900/70 text-emerald-400 backdrop-blur-sm font-mono"
-          >
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            LIVE
-          </Badge>
-        </div>
-      )}
     </div>
   );
 }

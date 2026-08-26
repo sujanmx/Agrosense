@@ -16,103 +16,19 @@ import {
   AlertTriangle,
   CheckCircle2,
   ImageOff,
-  Camera,
+  Sparkles,
+  Info,
 } from "lucide-react";
 import type { DiagnosisSeverity } from "@/types";
 
 // ────────────────────────────────────────────────────────────────
-// DiagnosticCard — AI Observation panel below the camera viewport
+// DiagnosticCard — Production AI Observation Panel (Phase 10)
 // ────────────────────────────────────────────────────────────────
 //
 // Communicates the full trust pipeline:
-//   OBSERVATION → CONFIDENCE → CONTEXT → RECOMMENDATION
+//   PROVIDER IDENTITY → OBSERVATION → CONFIDENCE → CONTEXT → EVIDENCE → RECOMMENDATION
 //
-// This component reads from the Zustand store directly so it
-// can correlate AI predictions with environmental telemetry.
-
-// ── Recommendation engine (mock) ────────────────────────────────
-
-interface Recommendation {
-  text: string;
-  priority: "info" | "action" | "urgent";
-}
-
-function getRecommendation(
-  label: string,
-  confidence: number,
-  tier: ConfidenceTier,
-  humidity: number,
-): Recommendation {
-  // Insufficient confidence
-  if (tier === "insufficient") {
-    return {
-      text: "Image quality may be insufficient. Try capturing another image with better lighting.",
-      priority: "info",
-    };
-  }
-
-  // Low confidence
-  if (tier === "low") {
-    return {
-      text: "Capture another image for better accuracy. Ensure the leaf fills the frame.",
-      priority: "info",
-    };
-  }
-
-  const lower = label.toLowerCase();
-
-  // Healthy results
-  if (lower.includes("healthy") || lower.includes("normal")) {
-    return {
-      text: "No intervention needed. Continue monitoring on schedule.",
-      priority: "info",
-    };
-  }
-
-  // No clear detection
-  if (lower.includes("no clear")) {
-    return {
-      text: "No plant material detected. Reposition the camera to capture a clear leaf sample.",
-      priority: "info",
-    };
-  }
-
-  // Disease-specific recommendations
-  if (lower.includes("blight")) {
-    return {
-      text: humidity > 65
-        ? "Inspect affected leaves. High humidity may accelerate spread — consider improving ventilation."
-        : "Inspect affected leaves. Remove severely damaged foliage and monitor adjacent plants.",
-      priority: confidence > 0.80 ? "urgent" : "action",
-    };
-  }
-
-  if (lower.includes("mildew")) {
-    return {
-      text: "Inspect leaf surfaces for white powdery coating. Improve air circulation around affected plants.",
-      priority: "action",
-    };
-  }
-
-  if (lower.includes("pest") || lower.includes("aphid")) {
-    return {
-      text: "Check undersides of leaves for pest colonies. Consider targeted biological or chemical control.",
-      priority: "action",
-    };
-  }
-
-  if (lower.includes("nutrient") || lower.includes("deficiency")) {
-    return {
-      text: "Review recent soil test results. Adjust fertilization schedule based on deficiency indicators.",
-      priority: "action",
-    };
-  }
-
-  return {
-    text: "Inspect the identified area manually to verify this observation.",
-    priority: "action",
-  };
-}
+// Strictly avoids claiming laboratory certainty or experimental accuracy on single frames.
 
 // ── Severity icon ───────────────────────────────────────────────
 
@@ -130,7 +46,7 @@ function SeverityIcon({ severity, tier }: { severity: DiagnosisSeverity; tier: C
   return icons[severity];
 }
 
-// ── Confidence bar ──────────────────────────────────────────────
+// ── AI Confidence Estimate Bar ──────────────────────────────────
 
 function ConfidenceBar({ confidence, tier }: { confidence: number; tier: ConfidenceTier }) {
   const barColor = {
@@ -141,17 +57,17 @@ function ConfidenceBar({ confidence, tier }: { confidence: number; tier: Confide
   }[tier];
 
   const tierLabel = {
-    high: "High confidence",
-    medium: "Medium confidence",
-    low: "Low confidence",
-    insufficient: "Insufficient evidence",
+    high: "High Confidence",
+    medium: "Medium Confidence",
+    low: "Low Confidence",
+    insufficient: "Insufficient Visual Evidence",
   }[tier];
 
   return (
-    <div className="space-y-1" role="meter" aria-label="AI confidence" aria-valuenow={Math.round(confidence * 100)} aria-valuemin={0} aria-valuemax={100}>
+    <div className="space-y-1" role="meter" aria-label="AI confidence estimate" aria-valuenow={Math.round(confidence * 100)} aria-valuemin={0} aria-valuemax={100}>
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-          {tierLabel}
+          AI Confidence Estimate ({tierLabel})
         </span>
         <span className="text-[11px] font-mono font-bold text-foreground">
           {(confidence * 100).toFixed(1)}%
@@ -160,24 +76,11 @@ function ConfidenceBar({ confidence, tier }: { confidence: number; tier: Confide
       <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ease-out ${barColor}`}
-          style={{ width: `${Math.min(100, confidence * 100)}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, confidence * 100))}%` }}
         />
       </div>
     </div>
   );
-}
-
-// ── Priority icon ───────────────────────────────────────────────
-
-function PriorityIcon({ priority }: { priority: "info" | "action" | "urgent" }) {
-  switch (priority) {
-    case "urgent":
-      return <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />;
-    case "action":
-      return <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />;
-    case "info":
-      return <CheckCircle2 className="h-3.5 w-3.5 text-zinc-400 shrink-0" />;
-  }
 }
 
 // ── Main component ──────────────────────────────────────────────
@@ -192,77 +95,148 @@ export function DiagnosticCard() {
     return (
       <div className="rounded-lg border border-border/30 bg-zinc-900/40 p-3">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Camera className="h-4 w-4 animate-pulse" />
-          <span className="text-xs">Awaiting first observation…</span>
+          <Sparkles className="h-4 w-4 text-emerald-400/60 animate-pulse" />
+          <span className="text-xs">Awaiting plant snapshot analysis…</span>
         </div>
       </div>
     );
   }
 
-  const severity = deriveSeverity(diagnosis.label, diagnosis.confidence);
+  const providerName = diagnosis.provider === "onnx" ? "ONNX Edge Model (v2)" : "Gemini Vision (Cloud Primary)";
+
+  const severity: DiagnosisSeverity = diagnosis.severity === "severe"
+    ? "critical"
+    : diagnosis.severity === "moderate" || diagnosis.severity === "mild"
+      ? "warning"
+      : deriveSeverity(diagnosis.label, diagnosis.confidence);
+
   const tier = deriveConfidenceTier(diagnosis.confidence);
   const hedged = hedgeLabel(diagnosis.label, tier);
-  const recommendation = getRecommendation(
-    diagnosis.label,
-    diagnosis.confidence,
-    tier,
-    humidity,
-  );
 
   // No clear detection state
-  const isNoDetection = diagnosis.label.toLowerCase().includes("no clear");
+  const isNoDetection =
+    diagnosis.label.toLowerCase().includes("no clear") ||
+    diagnosis.label.toLowerCase().includes("unknown") ||
+    diagnosis.plantDetected === false;
 
   // Severity accent
   const accentColor = {
-    healthy: "border-l-emerald-500/50",
-    warning: "border-l-amber-500/50",
-    critical: "border-l-red-500/50",
+    healthy: "border-l-emerald-500/60",
+    warning: "border-l-amber-500/60",
+    critical: "border-l-red-500/60",
+  }[severity];
+
+  const severityBadgeColor = {
+    healthy: "bg-emerald-950/60 text-emerald-300 border-emerald-500/30",
+    warning: "bg-amber-950/60 text-amber-300 border-amber-500/30",
+    critical: "bg-red-950/60 text-red-300 border-red-500/30",
   }[severity];
 
   return (
     <div
-      className={`rounded-lg border border-border/30 bg-zinc-900/40 border-l-2 ${accentColor} transition-colors duration-300`}
+      className={`rounded-lg border border-border/30 bg-zinc-900/40 border-l-4 ${accentColor} transition-colors duration-300 space-y-2.5`}
       role="region"
       aria-label="AI Observation"
     >
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="px-3 pt-3 pb-2 flex items-start gap-2.5">
+      {/* ── Header: Provider Identity + Title ─────────────────────────── */}
+      <div className="px-3 pt-3 flex items-start justify-between border-b border-border/20 pb-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-emerald-400 shrink-0" />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider font-semibold text-zinc-400">
+                AI Engine:
+              </span>
+              <span className="text-[10px] font-mono font-bold text-emerald-400">
+                {providerName}
+              </span>
+            </div>
+            {diagnosis.plantSpecies && (
+              <span className="text-[11px] text-zinc-300 font-medium">
+                Host Crop: {diagnosis.plantSpecies}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Timestamp + Latency */}
+        <div className="flex flex-col items-end text-[9px] text-muted-foreground/80 font-mono">
+          <div className="flex items-center gap-1">
+            <Clock className="h-2.5 w-2.5" />
+            {diagnosis.timestamp ? new Date(diagnosis.timestamp).toLocaleTimeString() : ""}
+          </div>
+          {diagnosis.latencyMs !== undefined && (
+            <span className="text-[8px] text-zinc-500">
+              {diagnosis.latencyMs} ms latency
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Diagnosis Title + Taxonomy ─────────────────────────────────── */}
+      <div className="px-3 flex items-start gap-2.5">
         <SeverityIcon severity={severity} tier={tier} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-              AI Observation
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-foreground tracking-tight mt-0.5">
+          <p className="text-sm font-semibold text-foreground tracking-tight">
             {isNoDetection ? (
-              <span className="flex items-center gap-1.5">
-                <ImageOff className="h-3.5 w-3.5 text-zinc-400 inline" />
-                No Clear Detection
+              <span className="flex items-center gap-1.5 text-zinc-400">
+                <ImageOff className="h-4 w-4 text-zinc-400 inline" />
+                No Clear Plant / Disease Detection
               </span>
             ) : (
               hedged
             )}
           </p>
-        </div>
-        {/* Timestamp */}
-        <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60 font-mono shrink-0">
-          <Clock className="h-2.5 w-2.5" />
-          {diagnosis.timestamp.toLocaleTimeString()}
+
+          {diagnosis.scientificName && (
+            <p className="text-[11px] italic text-zinc-400 font-serif mt-0.5">
+              {diagnosis.scientificName}
+            </p>
+          )}
+
+          {diagnosis.diseaseClass && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[9px] font-mono bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded border border-border/30">
+                Taxonomy: {diagnosis.diseaseClass}
+              </span>
+              {diagnosis.severity && (
+                <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border ${severityBadgeColor}`}>
+                  Severity: {diagnosis.severity}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Confidence ─────────────────────────────────────── */}
-      <div className="px-3 pb-2">
+      {/* ── Confidence Estimate Bar ───────────────────────────────────── */}
+      <div className="px-3">
         <ConfidenceBar confidence={diagnosis.confidence} tier={tier} />
       </div>
 
-      {/* ── Environmental context (if telemetry available) ──── */}
+      {/* ── Visual Evidence (from Gemini Vision) ───────────────────────── */}
+      {diagnosis.visualEvidence && (
+        <div className="px-3">
+          <div className="rounded-md bg-zinc-950/50 border border-border/20 px-2.5 py-2">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Info className="h-3 w-3 text-blue-400 shrink-0" />
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">
+                Visual Evidence
+              </p>
+            </div>
+            <p className="text-[11px] text-zinc-300 leading-relaxed">
+              {diagnosis.visualEvidence}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Environmental context (if telemetry available) ────────────── */}
       {temperature > 0 && (
-        <div className="px-3 pb-2">
+        <div className="px-3">
           <div className="rounded-md bg-zinc-900/60 border border-border/20 px-2.5 py-1.5">
             <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-1">
-              Environmental context
+              Environmental Context
             </p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
@@ -273,7 +247,7 @@ export function DiagnosticCard() {
                 <Droplets className="h-3 w-3 text-blue-400" />
                 {humidity.toFixed(1)}% RH
                 {humidity > 70 && (
-                  <span className="text-amber-400 text-[8px] ml-0.5">▲ HIGH</span>
+                  <span className="text-amber-400 text-[8px] ml-0.5">▲ HIGH RISK</span>
                 )}
               </div>
             </div>
@@ -281,20 +255,28 @@ export function DiagnosticCard() {
         </div>
       )}
 
-      {/* ── Recommendation ─────────────────────────────────── */}
-      <div className="px-3 pb-3">
-        <div className="flex items-start gap-2">
-          <PriorityIcon priority={recommendation.priority} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">
-              Recommended action
-            </p>
-            <p className="text-[11px] text-foreground/80 leading-relaxed">
-              {recommendation.text}
-            </p>
+      {/* ── Recommendation ───────────────────────────────────────────── */}
+      {diagnosis.recommendation && (
+        <div className="px-3 pb-3">
+          <div className="flex items-start gap-2 rounded-md bg-emerald-950/20 border border-emerald-500/20 p-2">
+            {severity === "critical" ? (
+              <AlertTriangle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+            ) : severity === "warning" ? (
+              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] text-emerald-400 uppercase tracking-wider font-medium mb-0.5">
+                Pathologist Recommendation
+              </p>
+              <p className="text-[11px] text-foreground/90 leading-relaxed">
+                {diagnosis.recommendation}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

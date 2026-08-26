@@ -1,0 +1,120 @@
+{
+  "pathology_tests": [
+    {
+      "target_class_id": 0,
+      "target_class_name": "Healthy Target Crop",
+      "predicted_class_id": 0,
+      "predicted_class_name": "Healthy Target Crop",
+      "confidence": 0.9999932050704956,
+      "severity_score": 0.0003784298896789551,
+      "energy_score": -12.94227409362793,
+      "latency_ms": 2.8425000000424916,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\00_healthy_target_crop\\pv_Tomato___healthy_3f12b950-bfdc-4670-adad-b32588dde9a3___RS_HL 9666.JPG"
+    },
+    {
+      "target_class_id": 1,
+      "target_class_name": "Early Blight (Alternaria solani)",
+      "predicted_class_id": 1,
+      "predicted_class_name": "Early Blight (Alternaria solani)",
+      "confidence": 0.9997977614402771,
+      "severity_score": 0.4261491894721985,
+      "energy_score": -10.465325355529785,
+      "latency_ms": 3.4440999988873955,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\01_early_blight\\pv_Tomato___Early_blight_983a04ad-2cc6-4d78-9365-a67012b4ffdc___RS_Erly.B 7661.JPG"
+    },
+    {
+      "target_class_id": 2,
+      "target_class_name": "Late Blight (Phytophthora infestans)",
+      "predicted_class_id": 2,
+      "predicted_class_name": "Late Blight (Phytophthora infestans)",
+      "confidence": 0.9999990463256836,
+      "severity_score": 0.5004087090492249,
+      "energy_score": -14.966638565063477,
+      "latency_ms": 1.5989999992598314,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\02_late_blight\\pv_Tomato___Late_blight_c9fa4b23-358b-4df7-a457-79573e018906___GHLB2 Leaf 8870.JPG"
+    },
+    {
+      "target_class_id": 3,
+      "target_class_name": "Powdery Mildew (Oidium neolycopersici)",
+      "predicted_class_id": 3,
+      "predicted_class_name": "Powdery Mildew (Oidium neolycopersici)",
+      "confidence": 0.9946743249893188,
+      "severity_score": 0.6421975493431091,
+      "energy_score": -11.508670806884766,
+      "latency_ms": 1.554000000396627,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\03_powdery_mildew\\tlid_pm_00303_pm107_mirror.jpg"
+    },
+    {
+      "target_class_id": 4,
+      "target_class_name": "Bacterial Spot (Xanthomonas)",
+      "predicted_class_id": 4,
+      "predicted_class_name": "Bacterial Spot (Xanthomonas)",
+      "confidence": 0.999998927116394,
+      "severity_score": 0.6861369013786316,
+      "energy_score": -17.267871856689453,
+      "latency_ms": 1.5904000010777963,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\04_bacterial_spot\\pv_Tomato___Bacterial_spot_2731979e-e02a-4736-8475-4542fcc6f596___UF.GRC_BS_Lab Leaf 0227.JPG"
+    },
+    {
+      "target_class_id": 5,
+      "target_class_name": "Leaf Mold (Passalora fulva)",
+      "predicted_class_id": 5,
+      "predicted_class_name": "Leaf Mold (Passalora fulva)",
+      "confidence": 0.9999994039535522,
+      "severity_score": 0.7741461396217346,
+      "energy_score": -14.279019355773926,
+      "latency_ms": 2.0136999992246274,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\05_leaf_mold\\pv_Tomato___Leaf_Mold_0bae0514-799a-479f-a407-ad763f458916___Crnl_L.Mold 8989.JPG"
+    },
+    {
+      "target_class_id": 6,
+      "target_class_name": "Septoria Leaf Spot",
+      "predicted_class_id": 6,
+      "predicted_class_name": "Septoria Leaf Spot",
+      "confidence": 0.9999780654907227,
+      "severity_score": 0.8603519797325134,
+      "energy_score": -13.622952461242676,
+      "latency_ms": 2.056799999991199,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\06_septoria_leaf_spot\\pv_Tomato___Septoria_leaf_spot_f97d12f1-f757-4b67-b19c-15c303c215c0___Keller.St_CG 1923.JPG"
+    },
+    {
+      "target_class_id": 7,
+      "target_class_name": "Nutrient Deficiency (Nitrogen/Potassium)",
+      "predicted_class_id": 7,
+      "predicted_class_name": "Nutrient Deficiency (Nitrogen/Potassium)",
+      "confidence": 0.9999978542327881,
+      "severity_score": 0.34843599796295166,
+      "energy_score": -14.76967716217041,
+      "latency_ms": 1.9238000004406786,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\07_nutrient_deficiency\\chlorosis_norm_pv_Tomato___healthy_59e72cea-137e-4c76-ba58-8b60aab68779___RS_HL 9885.JPG"
+    },
+    {
+      "target_class_id": 8,
+      "target_class_name": "Pest Infestation (Aphids/Mites)",
+      "predicted_class_id": 8,
+      "predicted_class_name": "Pest Infestation (Aphids/Mites)",
+      "confidence": 0.9999957084655762,
+      "severity_score": 0.4402521550655365,
+      "energy_score": -14.360090255737305,
+      "latency_ms": 1.5252000011969358,
+      "match": true,
+      "sample_image": "data\\processed\\pathology\\08_pest_infestation\\pv_Tomato___Spider_mites Two-spotted_spider_mite_105833d3-690a-44fa-abd7-0a8c6245f7b0___Com.G_SpM_FL 1277.JPG"
+    }
+  ],
+  "detector_test": {
+    "test_task": "plant_detector",
+    "sample_image": "data\\processed\\detector\\images\\doc_train_009-e1373768789869.jpg.jpg",
+    "total_proposals": 144,
+    "organ_classes_evaluated": 7,
+    "mean_latency_ms": 7.647100001122453,
+    "top_class_id": 0
+  }
+}
