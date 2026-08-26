@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   IPlantAnalysisProvider,
   ImageAnalysisInput,
   PlantAnalysisResult,
@@ -134,7 +134,13 @@ export class GeminiProvider implements IPlantAnalysisProvider {
         let errMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errData = await response.json();
-          if (errData?.error) {
+          if (errData?.gemini_message) {
+            const statusPrefix = errData.gemini_status ? `[${errData.gemini_status}] ` : "";
+            errMessage = `${errData.error || "GEMINI_REQUEST_FAILED"}: ${statusPrefix}${errData.gemini_message}`;
+          } else if (errData?.message) {
+            const statusPrefix = errData.gemini_status ? `[${errData.gemini_status}] ` : "";
+            errMessage = `${errData.error || "GEMINI_REQUEST_FAILED"}: ${statusPrefix}${errData.message}`;
+          } else if (errData?.error) {
             errMessage = errData.error;
           }
         } catch {

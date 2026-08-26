@@ -1,4 +1,4 @@
-﻿// ─── Phase 10 Integration & Contract Verification Suite ──────────────────────
+// ─── Phase 10 Integration & Contract Verification Suite ──────────────────────
 
 import { CANONICAL_TAXONOMY } from "./src/ai/providers/types.ts";
 
@@ -104,6 +104,7 @@ for (const t of testMatrix) {
 console.log("\n[4] Verifying Client Security (Zero API Key Leakage)...");
 import * as fs from "fs";
 import * as path from "path";
+import * as crypto from "crypto";
 
 const distJsFiles = fs.readdirSync("./dist/assets").filter(f => f.endsWith(".js"));
 let keyFoundInBundle = false;
@@ -114,6 +115,66 @@ for (const file of distJsFiles) {
   }
 }
 assert(!keyFoundInBundle, "Production dist bundle contains ZERO Gemini API keys or secret references");
+
+// ─── Test 5: Server-Side Diagnostics & Error Sanitization ───────────────────
+console.log("\n[5] Verifying Safe Server Diagnostics & Sanitization...");
+import handler, { normalizeModelName, extractSanitizedGeminiError } from "./api/analyze-plant.ts";
+
+assert(normalizeModelName("gemini-2.5-flash") === "gemini-2.5-flash", "Model normalized: gemini-2.5-flash");
+assert(normalizeModelName("models/gemini-2.5-flash") === "gemini-2.5-flash", "Prefix models/ stripped cleanly");
+assert(normalizeModelName("models/models/gemini-2.5-flash") === "gemini-2.5-flash", "Double prefix stripped cleanly");
+assert(normalizeModelName("gemini-2.5-flash:generateContent") === "gemini-2.5-flash", "Action suffix stripped");
+assert(normalizeModelName("") === "gemini-2.5-flash", "Empty fallback defaults to gemini-2.5-flash");
+
+// Mock GET handler
+const mockRes = {
+  statusCode: 0,
+  headers: {},
+  body: "",
+  setHeader(k, v) { this.headers[k] = v; },
+  end(content) { this.body = content; }
+};
+await handler({ method: "GET" }, mockRes);
+assert(mockRes.statusCode === 200, "Diagnostic GET handler returns HTTP 200");
+const diagBody = JSON.parse(mockRes.body);
+assert(diagBody.provider === "gemini", "Diagnostics reports provider=gemini");
+assert(diagBody.sdk_version === "2.19.0", "Diagnostics reports sdk_version=2.19.0");
+assert(diagBody.api_version === "v1beta", "Diagnostics reports api_version=v1beta");
+assert(typeof diagBody.gemini_api_key_present === "boolean", "Diagnostics exposes gemini_api_key_present as boolean only");
+assert(!("apiKey" in diagBody) && !("key" in diagBody), "Diagnostics NEVER exposes raw key");
+
+// Error sanitization
+const rawErrorWithSecret = {
+  name: "ApiError",
+  status: 400,
+  message: '{"error":{"code":400,"message":"Invalid key [AIzaSyTestSecretKey12345]","status":"INVALID_ARGUMENT"}}'
+};
+const sanitized = extractSanitizedGeminiError(rawErrorWithSecret);
+assert(sanitized.httpStatus === 400, "Extracts HTTP 400 correctly");
+assert(sanitized.geminiStatus === "API_KEY_INVALID", "Categorizes API_KEY_INVALID status");
+assert(!sanitized.geminiMessage.includes("AIzaSyTestSecretKey12345"), "Sanitizes raw API key string from message");
+assert(sanitized.geminiMessage.includes("REDACTED"), "Replaces key with REDACTED");
+
+// ─── Test 6: Preserved ONNX Bit-for-Bit SHA-256 Hash Verification ───────────
+console.log("\n[6] Verifying ONNX Inactive Models SHA-256 Cryptographic Parity...");
+
+const EXPECTED_HASHES = {
+  "public/models/classifier_v2.onnx": "DE4C21AAAA8EC58D3A8035107E8EC716AA67D494D679D4FD398576D67669BBBD",
+  "public/models/detector_v2.onnx": "D9BC7B5BEA441F6256DABBB58B2F2142AB41AE5A93941E435DAFE4FB19FC1C4B",
+  "public/models/pathology_classifier_int8.onnx": "48444067EA4A9B22AA0423A4DEF177FF9AE5B3975D59586E9D9A476F9ECEA091",
+  "public/models/pathology_classifier_int8.onnx.data": "460621CE1015707B774CB88C78A71664F5898EF1CDA1A8C50AD69FD8397DF951",
+  "public/models/target_crop_detector_int8.onnx": "ECB59635B14D260EFBA7A54C74303A3C95C4A7BA58A6D00137DAC8CDE6243764",
+  "public/models/target_crop_detector_int8.onnx.data": "CC6E30781969D4E27EEC41835EFEEDCDFCFBD65CDEEAEF8F35C3BC8D745B661A",
+  "backups/models_production_20260826_044534/pathology_classifier_int8.onnx": "48444067EA4A9B22AA0423A4DEF177FF9AE5B3975D59586E9D9A476F9ECEA091",
+  "backups/models_production_20260826_044534/target_crop_detector_int8.onnx": "ECB59635B14D260EFBA7A54C74303A3C95C4A7BA58A6D00137DAC8CDE6243764",
+};
+
+for (const [filePath, expectedHash] of Object.entries(EXPECTED_HASHES)) {
+  assert(fs.existsSync(filePath), `File exists: ${filePath}`);
+  const data = fs.readFileSync(filePath);
+  const actualHash = crypto.createHash("sha256").update(data).digest("hex").toUpperCase();
+  assert(actualHash === expectedHash, `SHA-256 match for ${filePath}: ${actualHash.substring(0, 12)}...`);
+}
 
 console.log("\n================================================================================");
 console.log(` RESULTS: ${passed} PASSED, ${failed} FAILED`);

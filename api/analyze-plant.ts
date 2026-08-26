@@ -225,30 +225,97 @@ export function normalizeModelName(rawModel?: string): string {
 }
 
 /**
- * Diagnostics logger for development troubleshooting (NEVER logs keys or image payloads)
+ * Diagnostics logger for server-side troubleshooting (NEVER logs keys or image payloads)
  */
 function logSafeDiagnostics(info: {
   provider: string;
   model: string;
+  sdkVersion: string;
   apiVersion: string;
   endpoint: string;
   httpStatus?: number | string;
   geminiErrorStatus?: string;
   geminiErrorMessage?: string;
+  diagnosticId?: string;
 }) {
-  console.log(`[AI-DIAGNOSTIC] Provider:    ${info.provider}`);
-  console.log(`[AI-DIAGNOSTIC] Model:       ${info.model}`);
-  console.log(`[AI-DIAGNOSTIC] API Version: ${info.apiVersion}`);
-  console.log(`[AI-DIAGNOSTIC] Endpoint:    ${info.endpoint}`);
+  if (info.diagnosticId) console.log(`[AI-DIAGNOSTIC] Diagnostic ID:      ${info.diagnosticId}`);
+  console.log(`[AI-DIAGNOSTIC] Provider:           ${info.provider}`);
+  console.log(`[AI-DIAGNOSTIC] Model:              ${info.model}`);
+  console.log(`[AI-DIAGNOSTIC] SDK Version:        ${info.sdkVersion}`);
+  console.log(`[AI-DIAGNOSTIC] API Version:        ${info.apiVersion}`);
+  console.log(`[AI-DIAGNOSTIC] Endpoint:           ${info.endpoint}`);
   if (info.httpStatus !== undefined) {
-    console.log(`[AI-DIAGNOSTIC] HTTP Status: ${info.httpStatus}`);
+    console.log(`[AI-DIAGNOSTIC] HTTP Status:        ${info.httpStatus}`);
   }
   if (info.geminiErrorStatus) {
-    console.log(`[AI-DIAGNOSTIC] Gemini Error Status: ${info.geminiErrorStatus}`);
+    console.log(`[AI-DIAGNOSTIC] Gemini Error Status:${info.geminiErrorStatus}`);
   }
   if (info.geminiErrorMessage) {
-    console.log(`[AI-DIAGNOSTIC] Gemini Error Message: ${info.geminiErrorMessage}`);
+    console.log(`[AI-DIAGNOSTIC] Gemini Error Msg:   ${info.geminiErrorMessage}`);
   }
+}
+
+/**
+ * Extracts and sanitizes error details from any caught error.
+ */
+export function extractSanitizedGeminiError(err: any): {
+  httpStatus: number;
+  geminiStatus: string;
+  geminiMessage: string;
+} {
+  let httpStatus = typeof err?.status === "number" ? err.status : (typeof err?.statusCode === "number" ? err.statusCode : 500);
+  let geminiStatus = err?.name || "ERROR";
+  let rawMessage = err?.message || "Unknown error during Gemini processing";
+
+  // Check if message is a JSON error payload from Google GenAI SDK
+  if (typeof rawMessage === "string" && rawMessage.trim().startsWith("{") && rawMessage.trim().endsWith("}")) {
+    try {
+      const parsed = JSON.parse(rawMessage.trim());
+      if (parsed?.error) {
+        if (typeof parsed.error.code === "number") httpStatus = parsed.error.code;
+        if (typeof parsed.error.status === "string") geminiStatus = parsed.error.status;
+        if (typeof parsed.error.message === "string") rawMessage = parsed.error.message;
+      }
+    } catch {
+      // Keep raw string
+    }
+  }
+
+  // Handle specific known error scenarios
+  const lowerMsg = rawMessage.toLowerCase();
+  if (lowerMsg.includes("gemini_api_key is not configured") || lowerMsg.includes("api key is not configured")) {
+    httpStatus = 500;
+    geminiStatus = "MISSING_API_KEY";
+  } else if (
+    lowerMsg.includes("api key not valid") ||
+    lowerMsg.includes("invalid key") ||
+    lowerMsg.includes("api_key_invalid") ||
+    lowerMsg.includes("api key expired")
+  ) {
+    httpStatus = 400;
+    geminiStatus = "API_KEY_INVALID";
+  } else if (lowerMsg.includes("not found for api version") || lowerMsg.includes("404") || lowerMsg.includes("model not found")) {
+    httpStatus = 404;
+    geminiStatus = "MODEL_NOT_FOUND";
+  } else if (lowerMsg.includes("resource_exhausted") || httpStatus === 429 || lowerMsg.includes("quota")) {
+    httpStatus = 429;
+    geminiStatus = "RATE_LIMIT_EXCEEDED";
+  } else if (lowerMsg.includes("permission_denied") || httpStatus === 403) {
+    httpStatus = 403;
+    geminiStatus = "PERMISSION_DENIED";
+  }
+
+  // Strict sanitization - NEVER leak keys or credentials
+  const sanitizedMessage = String(rawMessage)
+    .replace(/AIzaSy[a-zA-Z0-9_-]+/g, "REDACTED")
+    .replace(/key=[^& \t\r\n\]\)]+/gi, "key=REDACTED")
+    .replace(/Bearer [a-zA-Z0-9._-]+/gi, "Bearer REDACTED");
+
+  return {
+    httpStatus,
+    geminiStatus,
+    geminiMessage: sanitizedMessage,
+  };
 }
 
 /**
@@ -281,6 +348,7 @@ export async function executeGeminiVision(
   logSafeDiagnostics({
     provider: "gemini",
     model,
+    sdkVersion: "2.19.0",
     apiVersion: "v1beta",
     endpoint: safeEndpoint,
   });
@@ -361,7 +429,8 @@ export async function executeGeminiVision(
     logSafeDiagnostics({
       provider: "gemini",
       model,
-      apiVersion: "v1beta (@google/genai v2.19.0)",
+      sdkVersion: "2.19.0",
+      apiVersion: "v1beta",
       endpoint: safeEndpoint,
       httpStatus: 200,
     });
@@ -376,21 +445,21 @@ export async function executeGeminiVision(
 
     return sanitizeGeminiResult(parsedJson, latencyMs);
   } catch (sdkError: any) {
-    const errorStatus = sdkError?.status || sdkError?.statusCode || "SDK_ERROR";
-    const errorMessage = sdkError?.message || "Unknown error during SDK inference";
+    const errorDetails = extractSanitizedGeminiError(sdkError);
 
     logSafeDiagnostics({
       provider: "gemini",
       model,
-      apiVersion: "v1beta (@google/genai v2.19.0)",
+      sdkVersion: "2.19.0",
+      apiVersion: "v1beta",
       endpoint: safeEndpoint,
-      httpStatus: errorStatus,
-      geminiErrorStatus: sdkError?.statusText || `${errorStatus}`,
-      geminiErrorMessage: errorMessage,
+      httpStatus: errorDetails.httpStatus,
+      geminiErrorStatus: errorDetails.geminiStatus,
+      geminiErrorMessage: errorDetails.geminiMessage,
     });
 
     // Attempt 2: Fallback via direct REST using header authentication (x-goog-api-key)
-    console.warn(`[AI] SDK inference failed (${errorStatus}), attempting REST fallback...`);
+    console.warn(`[AI] SDK inference failed (${errorDetails.httpStatus}: ${errorDetails.geminiStatus}), attempting REST fallback...`);
     try {
       const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
       const payload = {
@@ -433,26 +502,38 @@ export async function executeGeminiVision(
 
       if (!restResponse.ok) {
         let errorDetail = `HTTP ${restResponse.status}`;
+        let restStatus = restResponse.statusText;
         try {
           const errJson = await restResponse.json();
           if (errJson?.error?.message) {
             errorDetail = errJson.error.message;
           }
+          if (errJson?.error?.status) {
+            restStatus = errJson.error.status;
+          }
         } catch {
           // Ignore JSON parse failure on error response
         }
 
+        const sanitizedRestDetail = errorDetail
+          .replace(/AIzaSy[a-zA-Z0-9_-]+/g, "REDACTED")
+          .replace(/key=[^& \t\r\n\]\)]+/gi, "key=REDACTED");
+
         logSafeDiagnostics({
           provider: "gemini",
           model,
+          sdkVersion: "2.19.0",
           apiVersion: "v1beta (REST fallback)",
           endpoint: `generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           httpStatus: restResponse.status,
-          geminiErrorStatus: restResponse.statusText,
-          geminiErrorMessage: errorDetail,
+          geminiErrorStatus: restStatus,
+          geminiErrorMessage: sanitizedRestDetail,
         });
 
-        throw new Error(`Gemini Vision service error: ${restResponse.status} (${restResponse.statusText}) - ${errorDetail}`);
+        const fallbackErr = new Error(`Gemini Vision service error: ${restResponse.status} (${restStatus}) - ${sanitizedRestDetail}`);
+        (fallbackErr as any).status = restResponse.status;
+        (fallbackErr as any).name = restStatus;
+        throw fallbackErr;
       }
 
       const resultData = await restResponse.json();
@@ -472,7 +553,8 @@ export async function executeGeminiVision(
 
       return sanitizeGeminiResult(parsedJson, latencyMs);
     } catch (restErr: any) {
-      throw new Error(restErr?.message || errorMessage);
+      // Re-throw with preserved status
+      throw restErr?.status ? restErr : sdkError;
     }
   }
 }
@@ -483,12 +565,38 @@ export async function executeGeminiVision(
 export default async function handler(req: any, res: any) {
   // CORS Headers
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     res.end();
+    return;
+  }
+
+  const model = normalizeModelName(process.env.GEMINI_MODEL);
+  const keyPresent = Boolean(
+    process.env.GEMINI_API_KEY &&
+    process.env.GEMINI_API_KEY.trim() !== "" &&
+    process.env.GEMINI_API_KEY !== "your_gemini_api_key_here"
+  );
+
+  // Safe server-side diagnostic GET endpoint
+  if (req.method === "GET") {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify({
+        status: keyPresent ? "ready" : "unconfigured",
+        provider: "gemini",
+        model,
+        sdk_version: "2.19.0",
+        api_version: "v1beta",
+        api_method: "ai.models.generateContent",
+        gemini_api_key_present: keyPresent,
+        timestamp: new Date().toISOString(),
+      })
+    );
     return;
   }
 
@@ -510,6 +618,25 @@ export default async function handler(req: any, res: any) {
         res.end(JSON.stringify({ error: "Invalid JSON payload in request body.", code: "INVALID_JSON" }));
         return;
       }
+    }
+
+    // Support diagnostic test payload
+    if (body?.diagnostic_check === true) {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.end(
+        JSON.stringify({
+          status: keyPresent ? "ready" : "unconfigured",
+          provider: "gemini",
+          model,
+          sdk_version: "2.19.0",
+          api_version: "v1beta",
+          api_method: "ai.models.generateContent",
+          gemini_api_key_present: keyPresent,
+          timestamp: new Date().toISOString(),
+        })
+      );
+      return;
     }
 
     const image = body?.image || body?.dataUrl || body?.base64;
@@ -553,28 +680,37 @@ export default async function handler(req: any, res: any) {
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(analysisResult));
   } catch (err: any) {
-    const rawMessage = err?.message || "Internal server error during plant analysis.";
-    const sanitizedMessage = rawMessage
-      .replace(/key=[^& \t\r\n]+/gi, "key=REDACTED")
-      .replace(/AIzaSy[a-zA-Z0-9_-]+/g, "REDACTED");
-    console.error("[AI] Error processing /api/analyze-plant:", sanitizedMessage);
-
-    const httpStatus = err?.httpStatus || (sanitizedMessage.includes("404") ? 404 : 500);
     const diagnosticId = `diag_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const model = normalizeModelName(process.env.GEMINI_MODEL);
+    const { httpStatus, geminiStatus, geminiMessage } = extractSanitizedGeminiError(err);
 
-    res.statusCode = 500;
+    logSafeDiagnostics({
+      diagnosticId,
+      provider: "gemini",
+      model,
+      sdkVersion: "2.19.0",
+      apiVersion: "v1beta",
+      endpoint: `generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      httpStatus,
+      geminiErrorStatus: geminiStatus,
+      geminiErrorMessage: geminiMessage,
+    });
+
+    const statusCode = typeof httpStatus === "number" && httpStatus >= 400 && httpStatus <= 599 ? httpStatus : 500;
+    res.statusCode = statusCode;
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({
         error: "GEMINI_REQUEST_FAILED",
-        message: sanitizedMessage,
         provider: "gemini",
-        http_status: typeof httpStatus === "number" ? httpStatus : 500,
-        model: model,
+        model,
+        sdk_version: "2.19.0",
         api_version: "v1beta",
+        api_method: "ai.models.generateContent",
+        gemini_api_key_present: keyPresent,
+        http_status: statusCode,
+        gemini_status: geminiStatus,
+        gemini_message: geminiMessage,
         diagnostic_id: diagnosticId,
-        code: "INFERENCE_ERROR",
       })
     );
   }
