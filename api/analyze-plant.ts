@@ -1,4 +1,4 @@
-﻿// ─── Server-Side Gemini Vision Plant Analysis Route ───────────────────────────
+// ─── Server-Side Gemini Vision Plant Analysis Route ───────────────────────────
 // Compatible with Vercel Serverless Functions and Vite local development server.
 //
 // SECURITY MANIFEST:
@@ -209,6 +209,48 @@ function sanitizeGeminiResult(raw: GeminiRawResponse, latencyMs: number): PlantA
   };
 }
 
+import { GoogleGenAI, Type } from "@google/genai";
+
+/**
+ * Normalizes model identifier to ensure strict canonical string without redundant prefixes.
+ */
+export function normalizeModelName(rawModel?: string): string {
+  if (!rawModel) return "gemini-2.5-flash";
+  let m = rawModel.trim();
+  while (m.toLowerCase().startsWith("models/")) {
+    m = m.substring(7).trim();
+  }
+  m = m.replace(/:[a-zA-Z0-9_-]+$/, "").trim();
+  return m || "gemini-2.5-flash";
+}
+
+/**
+ * Diagnostics logger for development troubleshooting (NEVER logs keys or image payloads)
+ */
+function logSafeDiagnostics(info: {
+  provider: string;
+  model: string;
+  apiVersion: string;
+  endpoint: string;
+  httpStatus?: number | string;
+  geminiErrorStatus?: string;
+  geminiErrorMessage?: string;
+}) {
+  console.log(`[AI-DIAGNOSTIC] Provider:    ${info.provider}`);
+  console.log(`[AI-DIAGNOSTIC] Model:       ${info.model}`);
+  console.log(`[AI-DIAGNOSTIC] API Version: ${info.apiVersion}`);
+  console.log(`[AI-DIAGNOSTIC] Endpoint:    ${info.endpoint}`);
+  if (info.httpStatus !== undefined) {
+    console.log(`[AI-DIAGNOSTIC] HTTP Status: ${info.httpStatus}`);
+  }
+  if (info.geminiErrorStatus) {
+    console.log(`[AI-DIAGNOSTIC] Gemini Error Status: ${info.geminiErrorStatus}`);
+  }
+  if (info.geminiErrorMessage) {
+    console.log(`[AI-DIAGNOSTIC] Gemini Error Message: ${info.geminiErrorMessage}`);
+  }
+}
+
 /**
  * Executes Gemini Vision inference with robust structured output.
  */
@@ -223,8 +265,8 @@ export async function executeGeminiVision(
     throw new Error("GEMINI_API_KEY is not configured on the server. Please set GEMINI_API_KEY in server environment.");
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  // Sanitize model identifier to prevent 404 from accidental duplicate 'models/' prefix or whitespace
+  const model = normalizeModelName(process.env.GEMINI_MODEL);
 
   // Clean base64 string
   let cleanBase64 = imageBase64;
@@ -234,70 +276,205 @@ export async function executeGeminiVision(
   }
   cleanBase64 = cleanBase64.replace(/\s+/g, "");
 
-  const payload = {
-    contents: [
-      {
-        parts: [
-          {
-            text: "Analyze this agricultural plant image carefully. Detect any target crop, leaf, pathology, or non-plant elements, and output strict structured JSON following the specified schema.",
-          },
-          {
-            inlineData: {
-              mimeType: mimeType || "image/jpeg",
-              data: cleanBase64,
-            },
-          },
-        ],
-      },
-    ],
-    systemInstruction: {
-      parts: [{ text: GEMINI_SYSTEM_INSTRUCTION }],
-    },
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
-      temperature: 0.1,
-    },
-  };
+  const safeEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  logSafeDiagnostics({
+    provider: "gemini",
+    model,
+    apiVersion: "v1beta",
+    endpoint: safeEndpoint,
   });
 
-  const latencyMs = performance.now() - startTime;
-
-  if (!response.ok) {
-    let errorDetail = `HTTP ${response.status}`;
-    try {
-      const errJson = await response.json();
-      if (errJson?.error?.message) {
-        errorDetail = errJson.error.message;
-      }
-    } catch {
-      // Ignore JSON parse failure on error body
-    }
-    console.error(`[AI] Gemini API request failed: ${errorDetail}`);
-    throw new Error(`Gemini Vision service error: ${response.status} (${response.statusText})`);
-  }
-
-  const resultData = await response.json();
-  const rawText = resultData?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!rawText) {
-    throw new Error("Empty or malformed candidate response received from Gemini Vision.");
-  }
-
-  let parsedJson: GeminiRawResponse;
+  // Attempt 1: Official Google GenAI SDK
   try {
-    parsedJson = JSON.parse(rawText);
-  } catch (err) {
-    console.error("[AI] Failed to parse Gemini response as JSON:", rawText);
-    throw new Error("Gemini Vision returned an unparseable structured response.");
-  }
+    const ai = new GoogleGenAI({ apiKey });
 
-  return sanitizeGeminiResult(parsedJson, latencyMs);
+    const sdkSchema = {
+      type: Type.OBJECT,
+      properties: {
+        plant_detected: { type: Type.BOOLEAN },
+        leaf_detected: { type: Type.BOOLEAN },
+        plant_species: { type: Type.STRING, nullable: true },
+        disease_class_id: { type: Type.INTEGER, nullable: true },
+        disease_class: { type: Type.STRING },
+        scientific_name: { type: Type.STRING, nullable: true },
+        severity: { type: Type.STRING, enum: ["none", "mild", "moderate", "severe", "unknown"] },
+        model_confidence: { type: Type.NUMBER },
+        bounding_box: {
+          type: Type.OBJECT,
+          nullable: true,
+          properties: {
+            x: { type: Type.NUMBER },
+            y: { type: Type.NUMBER },
+            width: { type: Type.NUMBER },
+            height: { type: Type.NUMBER },
+          },
+          required: ["x", "y", "width", "height"],
+        },
+        visual_evidence: { type: Type.STRING },
+        recommendation: { type: Type.STRING },
+      },
+      required: [
+        "plant_detected",
+        "leaf_detected",
+        "disease_class",
+        "severity",
+        "model_confidence",
+        "visual_evidence",
+        "recommendation",
+      ],
+    };
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: "Analyze this agricultural plant image carefully. Detect any target crop, leaf, pathology, or non-plant elements, and output strict structured JSON following the specified schema.",
+            },
+            {
+              inlineData: {
+                mimeType: mimeType || "image/jpeg",
+                data: cleanBase64,
+              },
+            },
+          ],
+        },
+      ],
+      config: {
+        systemInstruction: GEMINI_SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: sdkSchema,
+        temperature: 0.1,
+      },
+    });
+
+    const latencyMs = performance.now() - startTime;
+    const rawText = typeof response.text === "string" ? response.text : (response as any).text?.();
+
+    if (!rawText) {
+      throw new Error("Empty or malformed candidate response received from Gemini Vision.");
+    }
+
+    logSafeDiagnostics({
+      provider: "gemini",
+      model,
+      apiVersion: "v1beta (@google/genai v2.19.0)",
+      endpoint: safeEndpoint,
+      httpStatus: 200,
+    });
+
+    let parsedJson: GeminiRawResponse;
+    try {
+      parsedJson = JSON.parse(rawText);
+    } catch (err) {
+      console.error("[AI] Failed to parse Gemini response as JSON:", rawText);
+      throw new Error("Gemini Vision returned an unparseable structured response.");
+    }
+
+    return sanitizeGeminiResult(parsedJson, latencyMs);
+  } catch (sdkError: any) {
+    const errorStatus = sdkError?.status || sdkError?.statusCode || "SDK_ERROR";
+    const errorMessage = sdkError?.message || "Unknown error during SDK inference";
+
+    logSafeDiagnostics({
+      provider: "gemini",
+      model,
+      apiVersion: "v1beta (@google/genai v2.19.0)",
+      endpoint: safeEndpoint,
+      httpStatus: errorStatus,
+      geminiErrorStatus: sdkError?.statusText || `${errorStatus}`,
+      geminiErrorMessage: errorMessage,
+    });
+
+    // Attempt 2: Fallback via direct REST using header authentication (x-goog-api-key)
+    console.warn(`[AI] SDK inference failed (${errorStatus}), attempting REST fallback...`);
+    try {
+      const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: "Analyze this agricultural plant image carefully. Detect any target crop, leaf, pathology, or non-plant elements, and output strict structured JSON following the specified schema.",
+              },
+              {
+                inlineData: {
+                  mimeType: mimeType || "image/jpeg",
+                  data: cleanBase64,
+                },
+              },
+            ],
+          },
+        ],
+        systemInstruction: {
+          parts: [{ text: GEMINI_SYSTEM_INSTRUCTION }],
+        },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: RESPONSE_SCHEMA,
+          temperature: 0.1,
+        },
+      };
+
+      const restResponse = await fetch(restUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const latencyMs = performance.now() - startTime;
+
+      if (!restResponse.ok) {
+        let errorDetail = `HTTP ${restResponse.status}`;
+        try {
+          const errJson = await restResponse.json();
+          if (errJson?.error?.message) {
+            errorDetail = errJson.error.message;
+          }
+        } catch {
+          // Ignore JSON parse failure on error response
+        }
+
+        logSafeDiagnostics({
+          provider: "gemini",
+          model,
+          apiVersion: "v1beta (REST fallback)",
+          endpoint: `generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          httpStatus: restResponse.status,
+          geminiErrorStatus: restResponse.statusText,
+          geminiErrorMessage: errorDetail,
+        });
+
+        throw new Error(`Gemini Vision service error: ${restResponse.status} (${restResponse.statusText}) - ${errorDetail}`);
+      }
+
+      const resultData = await restResponse.json();
+      const rawText = resultData?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!rawText) {
+        throw new Error("Empty or malformed candidate response received from Gemini Vision REST fallback.");
+      }
+
+      let parsedJson: GeminiRawResponse;
+      try {
+        parsedJson = JSON.parse(rawText);
+      } catch (err) {
+        console.error("[AI] Failed to parse Gemini REST fallback response as JSON:", rawText);
+        throw new Error("Gemini Vision returned an unparseable structured response.");
+      }
+
+      return sanitizeGeminiResult(parsedJson, latencyMs);
+    } catch (restErr: any) {
+      throw new Error(restErr?.message || errorMessage);
+    }
+  }
 }
 
 /**
@@ -376,16 +553,28 @@ export default async function handler(req: any, res: any) {
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(analysisResult));
   } catch (err: any) {
-    const message = err?.message || "Internal server error during plant analysis.";
-    console.error("[AI] Error processing /api/analyze-plant:", message);
+    const rawMessage = err?.message || "Internal server error during plant analysis.";
+    const sanitizedMessage = rawMessage
+      .replace(/key=[^& \t\r\n]+/gi, "key=REDACTED")
+      .replace(/AIzaSy[a-zA-Z0-9_-]+/g, "REDACTED");
+    console.error("[AI] Error processing /api/analyze-plant:", sanitizedMessage);
+
+    const httpStatus = err?.httpStatus || (sanitizedMessage.includes("404") ? 404 : 500);
+    const diagnosticId = `diag_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const model = normalizeModelName(process.env.GEMINI_MODEL);
 
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({
-        error: message.replace(/key=[^&]+/g, "key=REDACTED"),
-        code: "INFERENCE_ERROR",
+        error: "GEMINI_REQUEST_FAILED",
+        message: sanitizedMessage,
         provider: "gemini",
+        http_status: typeof httpStatus === "number" ? httpStatus : 500,
+        model: model,
+        api_version: "v1beta",
+        diagnostic_id: diagnosticId,
+        code: "INFERENCE_ERROR",
       })
     );
   }
