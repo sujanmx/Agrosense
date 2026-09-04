@@ -42,9 +42,6 @@ export function DashboardLayout({ left, center, right }: DashboardLayoutProps) {
                 <h1 className="text-sm font-bold tracking-tight text-foreground">
                   AgroSense
                 </h1>
-                <span className="hidden sm:inline text-[10px] text-muted-foreground font-mono bg-zinc-800 px-1.5 py-0.5 rounded">
-                  SIH25015
-                </span>
               </div>
               <p className="hidden sm:block text-[10px] text-muted-foreground leading-none">
                 Smart Agriculture IoT Dashboard
