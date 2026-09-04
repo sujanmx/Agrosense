@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AgroSense Complete Hardware & Software Architecture</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 15mm 18mm 15mm;
+      @bottom-right {
+        content: counter(page);
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+      line-height: 1.5;
+      font-size: 10.5pt;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #065f46;
+      font-size: 20pt;
+      border-bottom: 2px solid #059669;
+      padding-bottom: 6px;
+      margin-top: 0;
+    }
+    h2 {
+      color: #047857;
+      font-size: 14pt;
+      border-bottom: 1px solid #d1d5db;
+      padding-bottom: 4px;
+      margin-top: 18pt;
+      page-break-after: avoid;
+    }
+    h3 {
+      color: #111827;
+      font-size: 11.5pt;
+      margin-top: 12pt;
+      page-break-after: avoid;
+    }
+    p, li {
+      color: #374151;
+    }
+    pre, code {
+      font-family: "Cascadia Code", "Fira Code", "Courier New", Courier, monospace;
+      font-size: 8.5pt;
+    }
+    pre {
+      background-color: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      padding: 8px 10px;
+      overflow-x: auto;
+      line-height: 1.35;
+      page-break-inside: avoid;
+    }
+    code {
+      background-color: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #065f46;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10pt 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 5px 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #065f46;
+      color: white;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background-color: #f9fafb;
+    }
+    .badge-code {
+      color: #047857;
+      font-weight: bold;
+    }
+    .callout {
+      border-left: 4px solid #059669;
+      background-color: #ecfdf5;
+      padding: 8px 12px;
+      margin: 10pt 0;
+      border-radius: 0 4px 4px 0;
+      page-break-inside: avoid;
+    }
+    .callout-warn {
+      border-left: 4px solid #d97706;
+      background-color: #fffbeb;
+      padding: 8px 12px;
+      margin: 10pt 0;
+      border-radius: 0 4px 4px 0;
+      page-break-inside: avoid;
+    }
+    .callout-alert {
+      border-left: 4px solid #dc2626;
+      background-color: #fef2f2;
+      padding: 8px 12px;
+      margin: 10pt 0;
+      border-radius: 0 4px 4px 0;
+      page-break-inside: avoid;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AgroSense Complete Hardware & Software Architecture</h1>
+  <p><strong>Comprehensive Engineering Reference for High-School & Undergraduate Engineers</strong><br>
+  <strong>Project:</strong> Smart Agriculture IoT (SIH25015) &bull; <strong>Firmware:</strong> <code>AgroSense-ESP-v2.0</code> &bull; <strong>Target:</strong> NodeMCU 1.0 (ESP-12E)</p>
+
+  <div class="callout">
+    <strong>System Overview:</strong> AgroSense seamlessly bridges physical soil probes and high-current relays with real-time web telemetry and Google Gemini 2.5 Flash Vision AI.
+  </div>
+
+  <h2>1. ESP8266 Hardware Identity & Platform Specifications</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Specification Field</th>
+        <th>Actual Project Value</th>
+        <th>Source of Truth</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Board Model</td><td>NodeMCU 1.0 (ESP-12E Module)</td><td>CONFIRMED FROM CODE</td></tr>
+      <tr><td>Microcontroller (MCU)</td><td>ESP8266EX (32-bit Xtensa LX106 @ 80MHz)</td><td>CONFIRMED FROM HARDWARE</td></tr>
+      <tr><td>Flash Storage Size</td><td>4 MB (32 MBit) SPI Flash</td><td>CONFIRMED FROM CLI FLASH</td></tr>
+      <tr><td>Arduino FQBN</td><td><code>esp8266:esp8266:nodemcuv2</code></td><td>CONFIRMED ARDUINO-CLI</td></tr>
+      <tr><td>Arduino Core Version</td><td>ESP8266 Core v3.1.2</td><td>CONFIRMED ARDUINO-CLI</td></tr>
+      <tr><td>Firmware Tag</td><td><code>AgroSense-ESP-v2.0</code></td><td>CONFIRMED FROM CODE</td></tr>
+      <tr><td>UART Baud Rate</td><td>115200 baud, 8N1</td><td>CONFIRMED FROM CODE</td></tr>
+      <tr><td>Wi-Fi Mode & SSID</td><td>Station Mode (<code>WIFI_STA</code>), SSID: <code>Redmi</code></td><td>CONFIRMED FROM CODE</td></tr>
+      <tr><td>mDNS Hostname</td><td><code>agrosense.local</code> (Port 81)</td><td>CONFIRMED FROM CODE</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. Complete GPIO Pin Audit</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ESP Pin</th>
+        <th>GPIO</th>
+        <th>Used?</th>
+        <th>Component</th>
+        <th>Direction</th>
+        <th>Hardware Role</th>
+        <th>Active State</th>
+        <th>Boot Strap Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>A0</code></td><td>ADC0</td><td>YES</td><td>Soil Sensor</td><td>INPUT</td><td>Analog soil voltage (0–3.3V)</td><td>Analog (0–1023)</td><td>Safe input only.</td></tr>
+      <tr><td><code>D0</code></td><td>GPIO16</td><td>NO</td><td>Unused</td><td>N/A</td><td>Deep-sleep wake</td><td>High at boot</td><td>No interrupt support.</td></tr>
+      <tr><td><code>D1</code></td><td>GPIO5</td><td>YES</td><td>Relay IN1</td><td>OUTPUT</td><td>Irrigation Pump Signal</td><td>Active-LOW</td><td>General I/O. Safe at boot.</td></tr>
+      <tr><td><code>D2</code></td><td>GPIO4</td><td>YES</td><td>Relay IN2</td><td>OUTPUT</td><td>Solenoid Valve Signal</td><td>Active-LOW</td><td>General I/O / I2C SDA. Safe.</td></tr>
+      <tr><td><code>D3</code></td><td>GPIO0</td><td>NO</td><td>Unused</td><td>N/A</td><td>Boot Mode Select</td><td>Pull-up HIGH</td><td>MUST be HIGH to run code.</td></tr>
+      <tr><td><code>D4</code></td><td>GPIO2</td><td>YES</td><td>Blue LED</td><td>OUTPUT</td><td>Built-in Activity LED</td><td>Active-LOW</td><td>MUST be HIGH at boot.</td></tr>
+      <tr><td><code>D5</code></td><td>GPIO14</td><td>NO</td><td>Unused</td><td>N/A</td><td>SPI Clock</td><td>High-Z</td><td>Safe general GPIO.</td></tr>
+      <tr><td><code>D6</code></td><td>GPIO12</td><td>NO</td><td>Unused</td><td>N/A</td><td>SPI MISO</td><td>High-Z</td><td>Safe general GPIO.</td></tr>
+      <tr><td><code>D7</code></td><td>GPIO13</td><td>NO</td><td>Unused</td><td>N/A</td><td>SPI MOSI</td><td>High-Z</td><td>Safe general GPIO.</td></tr>
+      <tr><td><code>D8</code></td><td>GPIO15</td><td>NO</td><td>Unused</td><td>N/A</td><td>Boot Mode Select</td><td>Pull-down LOW</td><td>MUST be LOW to run code.</td></tr>
+      <tr><td><code>TX</code></td><td>GPIO1</td><td>NO</td><td>Serial Console</td><td>OUTPUT</td><td>UART0 Transmit</td><td>High</td><td>Serial logs at 115200 baud.</td></tr>
+      <tr><td><code>RX</code></td><td>GPIO3</td><td>NO</td><td>Serial Console</td><td>INPUT</td><td>UART0 Receive</td><td>High</td><td>Serial input from PC.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>3. Physical Connection Map & Wiring Instructions</h2>
+  <pre>
+  NodeMCU Pin D1  ──►  Relay Module IN1  (Pump control signal, Active-LOW)
+  NodeMCU Pin D2  ──►  Relay Module IN2  (Valve control signal, Active-LOW)
+  NodeMCU Pin A0  ──►  Soil Sensor AO    (Analog soil moisture voltage)
+  NodeMCU Pin 3V3 ──►  Soil Sensor VCC   (+3.3V power)
+  NodeMCU Pin VIN ──►  Relay Module VCC  (+5.0V USB coil power)
+  NodeMCU Pin GND ──►  Shared Ground (-) (Common 0V Ground Plane)
+  </pre>
+
+  <h2>4. Power Architecture & Electrical Isolation</h2>
+  <p>To prevent electrical damage, <strong>Logic Power</strong> (the brain) is separated from <strong>Load Power</strong> (the motor).</p>
+  <div class="callout-warn">
+    <strong>Why Can't the ESP Power a Motor Directly?</strong>
+    <ul>
+      <li><strong>Current Limitation:</strong> The ESP8266 GPIO pin outputs only ~12 mA. A water pump requires 500 to 2000 mA. Connecting a pump directly to a GPIO pin burns out the chip instantly.</li>
+      <li><strong>Inductive Flyback:</strong> Motors and solenoids contain wire coils that produce high-voltage reverse electrical spikes (50–200V) when switched off. Optocoupled relays protect the ESP with light-based isolation.</li>
+    </ul>
+  </div>
+
+  <h2>5. Soil Moisture Sensor Physics</h2>
+  <p>The soil sensor measures conductivity between two metallic probes:</p>
+  <ul>
+    <li><strong>Dry Soil (0% Moisture):</strong> High resistance &bull; Raw ADC reads near <code>1023</code> (3.3V).</li>
+    <li><strong>Fully Saturated Soil (100% Moisture):</strong> High conductivity &bull; Raw ADC drops to near <code>350</code> (1.1V).</li>
+  </ul>
+  <pre>
+  float mapped = (float)map(rawADC, SOIL_DRY_ADC, SOIL_WET_ADC, 0, 100);
+  return constrain(mapped, 0.0f, 100.0f);
+  </pre>
+
+  <h2>6. Sensor Classification: Real vs. Simulated</h2>
+  <table>
+    <thead>
+      <tr><th>Sensor Field</th><th>Classification</th><th>Implementation Rationale</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Soil Moisture (%)</td><td><strong>PHYSICAL SENSOR</strong></td><td>Sampled live on Analog Pin A0 every 2000ms.</td></tr>
+      <tr><td>Temperature (&deg;C)</td><td><strong>SOFTWARE SIMULATED</strong></td><td>Simulated drift (20&deg;C–42&deg;C) in code (no DHT connected).</td></tr>
+      <tr><td>Humidity (%RH)</td><td><strong>SOFTWARE SIMULATED</strong></td><td>Simulated drift (28%–92% RH) in code (no DHT connected).</td></tr>
+      <tr><td>Plant Pathology / Leaf AI</td><td><strong>HYBRID AI VISION</strong></td><td>Cloud Google Gemini 2.5 Flash + Local ONNX INT8 fallback.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>7. Breadboard Wiring Assembly Guide</h2>
+  <p>Follow these 7 steps with power disconnected:</p>
+  <ol>
+    <li><strong>Ground Bus:</strong> Connect NodeMCU <code>GND</code> to the blue (-) ground rail on the breadboard.</li>
+    <li><strong>+3.3V Bus:</strong> Connect NodeMCU <code>3V3</code> to the red (+) positive rail on the breadboard.</li>
+    <li><strong>Soil Sensor Power:</strong> Connect Soil Sensor <code>VCC</code> to (+) 3.3V rail, and <code>GND</code> to (-) ground rail.</li>
+    <li><strong>Soil Sensor Signal:</strong> Connect Soil Sensor <code>AO</code> directly to NodeMCU pin <code>A0</code>.</li>
+    <li><strong>Pump Signal:</strong> Connect Relay Module <code>IN1</code> to NodeMCU pin <code>D1</code>.</li>
+    <li><strong>Valve Signal:</strong> Connect Relay Module <code>IN2</code> to NodeMCU pin <code>D2</code>.</li>
+    <li><strong>Relay Power:</strong> Connect Relay Module <code>GND</code> to (-) rail, and <code>VCC</code> to NodeMCU <code>VIN</code> (5V).</li>
+  </ol>
+
+  <h2>8. Firmware Boot Safety Sequence</h2>
+  <pre>
+  [1] Power On / RST  ──►  [2] Serial at 115200 baud
+                                    │
+  [4] Wi-Fi Connect (Redmi) ◄──  [3] allActuatorsSafe() (Relays FORCED OFF)
+            │
+  [5] mDNS Init (agrosense.local)  ──►  [6] WebSocket Server on Port 81
+                                                    │
+                                        [7] Live Telemetry & Commands
+  </pre>
+
+  <h2>9. Multicast DNS (mDNS) & Local Discovery</h2>
+  <p>Instead of hardcoding dynamic DHCP IP addresses, the system resolves <code>agrosense.local</code> automatically:</p>
+  <pre>
+  💻 Laptop Browser:  "Who is agrosense.local?" (Multicast UDP 5353 query)
+  📟 ESP8266 Gateway: "I am agrosense.local, and my IP is 192.168.43.150!"
+  💻 Laptop Browser:  "Connecting directly to ws://192.168.43.150:81..."
+  </pre>
+
+  <h2>10. Frontend Connection Engine Candidate Hierarchy</h2>
+  <table>
+    <thead>
+      <tr><th>Priority</th><th>Candidate Target</th><th>Mode Label</th><th>Condition</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td><code>ws://agrosense.local:81</code></td><td><strong>LOCAL ESP</strong></td><td>Primary auto-discovery on local Wi-Fi.</td></tr>
+      <tr><td>2</td><td><code>localStorage["AGROSENSE_WS_URL"]</code></td><td><strong>LOCAL ESP</strong></td><td>Manual IP override entered in diagnostics modal.</td></tr>
+      <tr><td>3</td><td><code>VITE_CLOUDFLARE_WS_URL</code></td><td><strong>CLOUDFLARE</strong></td><td>Remote tunnel fallback for worldwide access.</td></tr>
+      <tr><td>4</td><td><code>localStorage["AGROSENSE_LAST_KNOWN_IP"]</code></td><td><strong>LOCAL ESP</strong></td><td>Cached IP from previous telemetry packets.</td></tr>
+      <tr><td>5</td><td><code>ws://10.18.37.83:81</code></td><td><strong>LOCAL ESP</strong></td><td>Static laboratory fallback.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>11. Complete Software Architecture Map</h2>
+  <pre>
+                                ┌────────────────────────────────────────┐
+                                │        AGROSENSE REACT FRONTEND        │
+                                └───────────┬────────────────┬───────────┘
+                                            │                │
+                     POST Leaf Image Base64 │                │ Live WebSocket (:81)
+                                            ▼                │
+                                ┌────────────────────────┐   │
+                                │   VERCEL SERVERLESS    │   │
+                                │   /api/analyze-plant   │   │
+                                └───────────┬────────────┘   │
+                                            │                │
+                         ┌──────────────────┴────────────────┤
+                         ▼                                   ▼
+             [ Google Gemini 2.5 Flash ]          [ NodeMCU ESP8266 Gateway ]
+             Cloud Vision AI Diagnosis            Port 81 WebSocket Server
+                         │                                   │
+                         ▼                                   ▼
+             [ Local ONNX Fallback ]               [ Sensors & Relays ]
+             Offline INT8 Pathology                Soil (A0), Relays (D1/D2)
+  </pre>
+
+  <div class="callout">
+    <strong>Document Integrity:</strong> Prepared for AgroSense SIH25015. All pin assignments and logic states verified directly against production code.
+  </div>
+
+</body>
+</html>

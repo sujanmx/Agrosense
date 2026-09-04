@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { throttlePerSecond } from "@/lib/throttle";
 import type {
+  ConnectionMode,
   ConnectionStatus,
   Device,
   DiagnosisResult,
@@ -9,6 +10,7 @@ import type {
   HardwareCommandTarget,
   InferenceStatus,
   ModelStatus,
+  SensorStatus,
   TelemetryDataPoint,
   TelemetryPayload,
 } from "@/types";
@@ -37,9 +39,16 @@ export interface AiState {
 }
 
 export interface TelemetryState {
-  temperature: number;
-  humidity: number;
-  soilMoisture: number;
+  /** null = no physical sensor or not yet received */
+  temperature: number | null;
+  /** null = no physical sensor or not yet received */
+  humidity: number | null;
+  /** null = sensor fault, probe disconnected, or not yet received */
+  soilMoisture: number | null;
+  /** Status strings from ESP firmware */
+  tempStatus:  SensorStatus | null;
+  humidStatus: SensorStatus | null;
+  soilStatus:  SensorStatus | null;
   lastUpdated: Date | null;
   history: TelemetryDataPoint[];
   updateTelemetry: (data: TelemetryPayload) => void;
@@ -47,11 +56,17 @@ export interface TelemetryState {
 
 export interface HardwareState {
   connectionStatus: ConnectionStatus;
+  connectionMode: ConnectionMode;
+  espIp: string | null;
+  latencyMs: number | null;
   devices: Device[];
   pumpActive: boolean;
   valveOpen: boolean;
   pendingCommands: Record<HardwareCommandTarget, HardwareCommand | null>;
   setConnectionStatus: (status: ConnectionStatus) => void;
+  setConnectionMode: (mode: ConnectionMode) => void;
+  setEspIp: (ip: string | null) => void;
+  setLatencyMs: (ms: number | null) => void;
   setPumpActive: (active: boolean) => void;
   setValveOpen: (open: boolean) => void;
   updateDevice: (id: string, patch: Partial<Omit<Device, "id">>) => void;
@@ -117,9 +132,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }),
 
   // ── Telemetry slice
-  temperature:  0,
-  humidity:     0,
-  soilMoisture: 0,
+  temperature:  null,
+  humidity:     null,
+  soilMoisture: null,
+  tempStatus:   null,
+  humidStatus:  null,
+  soilStatus:   null,
   lastUpdated:  null,
   history:      [],
 
@@ -129,9 +147,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
       const point: TelemetryDataPoint = { ...data, timestamp: now };
       const history = [...state.history, point].slice(-MAX_HISTORY);
       return {
-        temperature:  data.temperature,
-        humidity:     data.humidity,
-        soilMoisture: data.soilMoisture,
+        // Preserve null when ESP sends null (sensor unavailable)
+        temperature:  data.temperature  !== undefined ? data.temperature  : state.temperature,
+        humidity:     data.humidity      !== undefined ? data.humidity      : state.humidity,
+        soilMoisture: data.soilMoisture  !== undefined ? data.soilMoisture  : state.soilMoisture,
+        tempStatus:   data.tempStatus    ?? state.tempStatus,
+        humidStatus:  data.humidStatus   ?? state.humidStatus,
+        soilStatus:   data.soilStatus    ?? state.soilStatus,
         lastUpdated:  now,
         history,
       };
@@ -139,6 +161,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   // ── Hardware slice
   connectionStatus: "DISCONNECTED",
+  connectionMode:   "DISCONNECTED",
+  espIp:            null,
+  latencyMs:        null,
   devices:          [],
   pumpActive:       false,
   valveOpen:        false,
@@ -149,8 +174,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),
-  setPumpActive:       (active)  => set({ pumpActive: active }),
-  setValveOpen:        (open)    => set({ valveOpen: open }),
+  setConnectionMode:   (mode)   => set({ connectionMode: mode }),
+  setEspIp:            (ip)     => set({ espIp: ip }),
+  setLatencyMs:        (ms)     => set({ latencyMs: ms }),
+  setPumpActive:       (active) => set({ pumpActive: active }),
+  setValveOpen:        (open)   => set({ valveOpen: open }),
 
   updateDevice: (id, patch) =>
     set((state) => ({

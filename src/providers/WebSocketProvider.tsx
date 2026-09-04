@@ -9,52 +9,95 @@ import {
 import type { ReactNode } from "react";
 import { useAppStore } from "@/store";
 import type {
+  ConnectionMode,
   ConnectionStatus,
   HardwareCommandTarget,
 } from "@/types";
 
 // ────────────────────────────────────────────────────────────────
-// Configuration
+// Configuration & Fallback Hierarchy
 // ────────────────────────────────────────────────────────────────
 //
-// Priority order for the WebSocket URL:
-//   1. localStorage key  "AGROSENSE_WS_URL"   (runtime override)
-//   2. Vite env variable  VITE_WS_URL          (.env file)
-//   3. Hardcoded fallback ws://10.18.37.83:81  (your live NodeMCU)
+// Connection Strategy:
+//   1. Try local ESP via mDNS:        ws://agrosense.local:81  (Mode: LOCAL ESP)
+//   2. Try manual local IP (if set):  localStorage["AGROSENSE_WS_URL"]
+//   3. Try Cloudflare Tunnel (if set): import.meta.env.VITE_CLOUDFLARE_WS_URL / VITE_WS_URL
+//   4. Try cached last known IP:      localStorage["AGROSENSE_LAST_KNOWN_IP"]
+//   5. Try fallback hardcoded IP:     ws://10.18.37.83:81
 //
-// To change IP at runtime without reloading source:
-//   localStorage.setItem("AGROSENSE_WS_URL", "ws://192.168.x.y:81");
-//   location.reload();
+// If agrosense.local succeeds: uses LOCAL ESP mode directly.
+// If local fails: seamlessly fails over to Cloudflare WSS if available.
 
-const HARDWARE_WS_URL =
-  (typeof window !== "undefined" && window.localStorage?.getItem("AGROSENSE_WS_URL")) ||
+export const DEFAULT_LOCAL_MDNS_URL = "ws://agrosense.local:81";
+export const LOCAL_STORAGE_KEY       = "AGROSENSE_WS_URL";
+export const LAST_KNOWN_IP_KEY      = "AGROSENSE_LAST_KNOWN_IP";
+
+const CLOUDFLARE_WS_URL =
+  (import.meta.env.VITE_CLOUDFLARE_WS_URL as string | undefined) ||
   (import.meta.env.VITE_WS_URL as string | undefined) ||
-  "ws://10.18.37.83:81";
+  "";
 
-// ── Exponential-backoff constants ─────────────────────────────
-const BACKOFF_BASE_MS  = 1_000;   // first retry after 1 s
-const BACKOFF_MAX_MS   = 30_000;  // cap retries at 30 s
-const BACKOFF_FACTOR   = 2;       // double each time
-const BACKOFF_JITTER   = 0.3;     // ±30% random jitter prevents thundering-herd
+// ── Exponential-backoff & probe constants ─────────────────────
+const PROBE_TIMEOUT_MS = 3_000;   // Timeout for individual candidate probe
+const PING_INTERVAL_MS = 4_000;   // Interval between latency measurement pings
+const BACKOFF_BASE_MS  = 1_000;   // First retry after 1 s
+const BACKOFF_MAX_MS   = 20_000;  // Cap retries at 20 s
+const BACKOFF_FACTOR   = 2;       // Double each cycle
+const BACKOFF_JITTER   = 0.3;     // ±30% random jitter
+
+// ── Helper: Classify Connection Mode from URL ───────────────────
+export function classifyConnectionMode(url: string): ConnectionMode {
+  if (!url) return "DISCONNECTED";
+  const lower = url.toLowerCase();
+  if (
+    lower.includes("cloudflare") ||
+    lower.includes("trycloudflare.com") ||
+    (lower.startsWith("wss://") && !lower.includes("192.168.") && !lower.includes("10.") && !lower.includes("local"))
+  ) {
+    return "CLOUDFLARE";
+  }
+  if (
+    lower.includes("agrosense.local") ||
+    lower.includes("192.168.") ||
+    lower.includes("10.") ||
+    lower.includes("172.") ||
+    lower.includes("localhost") ||
+    lower.includes("127.0.0.1") ||
+    lower.startsWith("ws://")
+  ) {
+    return "LOCAL ESP";
+  }
+  return "LOCAL ESP";
+}
 
 // ────────────────────────────────────────────────────────────────
-// Context
+// Context Value
 // ────────────────────────────────────────────────────────────────
 
 interface WebSocketContextValue {
-  /** Live socket status — mirrors the Zustand store but available via hook. */
+  /** Live socket status: CONNECTING | CONNECTED | DISCONNECTED | ERROR */
   connectionStatus: ConnectionStatus;
-  /** Current WebSocket URL in use. */
+  /** Active connection mode: "LOCAL ESP" | "CLOUDFLARE" | "DISCONNECTED" */
+  connectionMode: ConnectionMode;
+  /** Current WebSocket URL in use / being probed */
   wsUrl: string;
-  /** Override the target URL and trigger a fresh connection. */
+  /** ESP8266 local IP address reported via telemetry (e.g. "192.168.1.100") */
+  espIp: string | null;
+  /** Live round-trip latency in milliseconds */
+  latencyMs: number | null;
+  /** Override the target URL (persists in localStorage) */
   setWsUrl: (url: string) => void;
-  /** Manually trigger reconnection (resets backoff counter). */
+  /** Quick manual IP helper (e.g., "192.168.43.50") */
+  setManualIp: (ip: string) => void;
+  /** Reset to default automatic mDNS discovery (ws://agrosense.local:81) */
+  resetToAutoDiscovery: () => void;
+  /** Manually trigger reconnection */
   reconnect: () => void;
-  /** Permanently close the socket until reconnect() is called. */
+  /** Permanently close the socket until reconnect() is called */
   disconnect: () => void;
-  /** Retry attempt counter — useful for showing "Retry 3/∞" in UI. */
+  /** Retry attempt counter */
   retryCount: number;
-  /** Next retry delay in ms — useful for a countdown indicator. */
+  /** Next retry delay in ms */
   nextRetryMs: number;
 }
 
@@ -66,22 +109,81 @@ const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [connectionStatus, setLocalStatus] = useState<ConnectionStatus>("DISCONNECTED");
-  const [wsUrl, setWsUrlState]             = useState(HARDWARE_WS_URL);
-  const [retryCount,  setRetryCount]        = useState(0);
-  const [nextRetryMs, setNextRetryMs]        = useState(BACKOFF_BASE_MS);
+  const [connectionMode,   setLocalMode]   = useState<ConnectionMode>("DISCONNECTED");
+  const [wsUrl,            setWsUrlState]  = useState<string>(() => {
+    return (
+      (typeof window !== "undefined" && window.localStorage?.getItem(LOCAL_STORAGE_KEY)) ||
+      DEFAULT_LOCAL_MDNS_URL
+    );
+  });
+  const [espIp,            setEspIpState]  = useState<string | null>(null);
+  const [latencyMs,        setLatencyState]= useState<number | null>(null);
+  const [retryCount,       setRetryCount]  = useState(0);
+  const [nextRetryMs,      setNextRetryMs] = useState(BACKOFF_BASE_MS);
 
   const socketRef         = useRef<WebSocket | null>(null);
   const retryTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryCountRef     = useRef(0);        // mutable ref so callbacks see fresh value
-  const shouldReconnect   = useRef(true);     // set false on deliberate disconnect()
+  const probeTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pingTimerRef      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const candidateIndexRef = useRef(0);
+  const retryCountRef     = useRef(0);
+  const shouldReconnect   = useRef(true);
 
-  // ── Keep Zustand store connectionStatus in sync ─────────────
+  // ── Sync Zustand Store ───────────────────────────────────────
   const setStatus = useCallback((s: ConnectionStatus) => {
     setLocalStatus(s);
     useAppStore.getState().setConnectionStatus(s);
   }, []);
 
-  // ── Compute next backoff delay with jitter ───────────────────
+  const setMode = useCallback((m: ConnectionMode) => {
+    setLocalMode(m);
+    useAppStore.getState().setConnectionMode(m);
+  }, []);
+
+  const setIp = useCallback((ip: string | null) => {
+    setEspIpState(ip);
+    useAppStore.getState().setEspIp(ip);
+  }, []);
+
+  const setLatency = useCallback((ms: number | null) => {
+    setLatencyState(ms);
+    useAppStore.getState().setLatencyMs(ms);
+  }, []);
+
+  // ── Compute candidate endpoints in priority order ────────────
+  const buildCandidateList = useCallback((): string[] => {
+    const list: string[] = [];
+    const saved = typeof window !== "undefined" ? window.localStorage?.getItem(LOCAL_STORAGE_KEY) : null;
+    const lastIp = typeof window !== "undefined" ? window.localStorage?.getItem(LAST_KNOWN_IP_KEY) : null;
+
+    // 1. Always prioritize mDNS local address
+    list.push(DEFAULT_LOCAL_MDNS_URL);
+
+    // 2. If user configured a custom manual URL that is not default mDNS, try it next
+    if (saved && saved !== DEFAULT_LOCAL_MDNS_URL && !list.includes(saved)) {
+      list.push(saved);
+    }
+
+    // 3. If Cloudflare WSS URL is configured, try it next
+    if (CLOUDFLARE_WS_URL && !list.includes(CLOUDFLARE_WS_URL)) {
+      list.push(CLOUDFLARE_WS_URL);
+    }
+
+    // 4. If a previously confirmed local IP was cached from telemetry, try it as fallback
+    if (lastIp && !list.includes(lastIp)) {
+      list.push(lastIp);
+    }
+
+    // 5. Default local fallback IP
+    const staticFallback = "ws://10.18.37.83:81";
+    if (!list.includes(staticFallback)) {
+      list.push(staticFallback);
+    }
+
+    return list;
+  }, []);
+
+  // ── Compute backoff delay ────────────────────────────────────
   const computeDelay = useCallback((attempt: number): number => {
     const exp     = BACKOFF_BASE_MS * Math.pow(BACKOFF_FACTOR, attempt);
     const capped  = Math.min(exp, BACKOFF_MAX_MS);
@@ -89,15 +191,37 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     return Math.round(capped + jitter);
   }, []);
 
-  // ── Clean up the retry timer ─────────────────────────────────
-  const clearRetryTimer = useCallback(() => {
+  // ── Clear all background timers ──────────────────────────────
+  const clearTimers = useCallback(() => {
     if (retryTimerRef.current !== null) {
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
     }
+    if (probeTimerRef.current !== null) {
+      clearTimeout(probeTimerRef.current);
+      probeTimerRef.current = null;
+    }
+    if (pingTimerRef.current !== null) {
+      clearInterval(pingTimerRef.current);
+      pingTimerRef.current = null;
+    }
   }, []);
 
-  // ── Inject / revoke the ws.send wrapper in the Zustand store ─
+  // ── Start live ping / latency probe ──────────────────────────
+  const startPingInterval = useCallback((ws: WebSocket) => {
+    if (pingTimerRef.current) clearInterval(pingTimerRef.current);
+    pingTimerRef.current = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: "ping", t: Date.now() }));
+        } catch {
+          // ignore
+        }
+      }
+    }, PING_INTERVAL_MS);
+  }, []);
+
+  // ── Inject / revoke the ws.send wrapper in Zustand store ─────
   const injectSender = useCallback((ws: WebSocket) => {
     useAppStore.setState({
       _sendToHardware: (cmdId, target, action) => {
@@ -107,7 +231,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         }
         const payload = JSON.stringify({ type: "command", cmdId, target, action });
         ws.send(payload);
-        console.log("[WS] Sent to ESP8266:", payload);
+        console.log("[WS] Sent to hardware:", payload);
       },
     });
   }, []);
@@ -120,9 +244,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // ────────────────────────────────────────────────────────────────
-  // handleMessage — parses every incoming ESP8266 frame
-  // ────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────
+  // handleMessage — parses incoming ESP frames
+  // ────────────────────────────────────────────────────────────
   const handleMessage = useCallback((event: MessageEvent) => {
     let data: Record<string, unknown>;
     try {
@@ -134,6 +258,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     const store = useAppStore.getState();
 
+    // ── 0. Pong frame (Latency measurement) ───────────────────
+    if (data.type === "pong" && typeof data.t === "number") {
+      const rtt = Math.max(1, Date.now() - data.t);
+      setLatency(rtt);
+      return;
+    }
+
     // ── 1. Telemetry broadcast ─────────────────────────────────
     if (
       data.type === "telemetry" ||
@@ -141,12 +272,31 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       data.humidity    !== undefined ||
       data.soilMoisture !== undefined
     ) {
+      // Parse sensor values — null means sensor is unavailable
+      // (ESP sends JSON null, which JS parses as null)
+      const tempVal  = data.temperature  === null ? null : (data.temperature  !== undefined ? Number(data.temperature)  : undefined);
+      const humidVal = data.humidity     === null ? null : (data.humidity     !== undefined ? Number(data.humidity)     : undefined);
+      const soilVal  = data.soilMoisture === null ? null : (data.soilMoisture !== undefined ? Number(data.soilMoisture) : undefined);
+
       store.updateTelemetry({
-        temperature:  Number(data.temperature  ?? 0),
-        humidity:     Number(data.humidity     ?? 0),
-        soilMoisture: Number(data.soilMoisture ?? 0),
+        temperature:  tempVal  !== undefined ? tempVal  : null,
+        humidity:     humidVal !== undefined ? humidVal : null,
+        soilMoisture: soilVal  !== undefined ? soilVal  : null,
+        tempStatus:   (data.tempStatus  as string | undefined) as import("@/types").SensorStatus | undefined,
+        humidStatus:  (data.humidStatus as string | undefined) as import("@/types").SensorStatus | undefined,
+        soilStatus:   (data.soilStatus  as string | undefined) as import("@/types").SensorStatus | undefined,
+        ip: data.ip ? String(data.ip) : undefined,
       });
-      // Keep actuator booleans in sync (ESP8266 includes them in every telemetry frame)
+
+      // Update IP if received
+      if (data.ip && typeof data.ip === "string") {
+        setIp(data.ip);
+        if (typeof window !== "undefined") {
+          window.localStorage?.setItem(LAST_KNOWN_IP_KEY, `ws://${data.ip}:81`);
+        }
+      }
+
+      // Keep actuator booleans in sync
       if (typeof data.pumpActive === "boolean") store.setPumpActive(data.pumpActive);
       if (typeof data.valveOpen  === "boolean") store.setValveOpen(data.valveOpen);
       return;
@@ -179,7 +329,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
       const cur = store.pendingCommands[target];
       if (cur && (!cmdId || cur.id === cmdId)) {
-        // Trust the boolean the firmware broadcasts after actuation
         if (typeof data.pumpActive === "boolean") store.setPumpActive(data.pumpActive);
         if (typeof data.valveOpen  === "boolean") store.setValveOpen(data.valveOpen);
 
@@ -189,14 +338,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             ...s.pendingCommands,
             [target]: {
               ...cur,
-              status:      "confirmed",
+              status:        "confirmed",
               acknowledgedAt: cur.acknowledgedAt ?? new Date(),
-              confirmedAt: new Date(),
+              confirmedAt:   new Date(),
             },
           },
         }));
 
-        // Auto-clear the confirmed badge after 3 s
         setTimeout(() => {
           const latest = useAppStore.getState().pendingCommands[target];
           if (latest?.id === cur.id) store.clearCommand(target);
@@ -206,71 +354,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     }
 
     console.debug("[WS] Unrecognised frame:", data);
-  }, []);
+  }, [setIp, setLatency]);
 
-  // ────────────────────────────────────────────────────────────────
-  // connect — open a new WebSocket and wire all event handlers
-  // ────────────────────────────────────────────────────────────────
-  const connect = useCallback(() => {
-    // Tear down any existing socket cleanly
-    if (socketRef.current) {
-      socketRef.current.onclose   = null; // prevent onclose from scheduling another retry
-      socketRef.current.onerror   = null;
-      socketRef.current.onmessage = null;
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-    clearRetryTimer();
-    revokeSender();
-    setStatus("CONNECTING");
-
-    const url = wsUrl; // capture current URL in closure
-    console.log(`[WS] Connecting to ${url} (attempt ${retryCountRef.current + 1})`);
-
-    let ws: WebSocket;
-    try {
-      ws = new WebSocket(url);
-    } catch (err) {
-      console.error("[WS] WebSocket constructor threw:", err);
-      setStatus("ERROR");
-      scheduleRetry();
-      return;
-    }
-
-    socketRef.current = ws;
-
-    ws.onopen = () => {
-      console.log(`[WS] Connected to ESP8266 at ${url}`);
-      setStatus("CONNECTED");
-      // Reset backoff on successful connection
-      retryCountRef.current = 0;
-      setRetryCount(0);
-      setNextRetryMs(BACKOFF_BASE_MS);
-      injectSender(ws);
-    };
-
-    ws.onmessage = handleMessage;
-
-    ws.onerror = (ev) => {
-      // onerror fires before onclose — log but let onclose handle retry
-      console.warn("[WS] Socket error:", ev);
-      setStatus("ERROR");
-    };
-
-    ws.onclose = (ev) => {
-      console.log(`[WS] Socket closed (code=${ev.code}, reason="${ev.reason ?? ""}").`);
-      revokeSender();
-      if (shouldReconnect.current) {
-        setStatus("DISCONNECTED");
-        scheduleRetry();
-      }
-    };
-  }, [wsUrl, clearRetryTimer, revokeSender, injectSender, handleMessage, setStatus]); // eslint-disable-line
-
-  // ────────────────────────────────────────────────────────────────
-  // scheduleRetry — exponential backoff with jitter
-  // ────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────
+  // scheduleRetry — exponential backoff across discovery cycle
+  // ────────────────────────────────────────────────────────────
   const scheduleRetry = useCallback(() => {
+    clearTimers();
+    revokeSender();
+    setMode("DISCONNECTED");
+    setStatus("DISCONNECTED");
+
     const attempt = retryCountRef.current;
     const delay   = computeDelay(attempt);
 
@@ -279,19 +373,136 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     setNextRetryMs(delay);
 
     console.log(
-      `[WS] Reconnecting in ${(delay / 1000).toFixed(1)} s ` +
-      `(attempt ${retryCountRef.current}, backoff ×${BACKOFF_FACTOR})`
+      `[WS] Auto-discovery retrying in ${(delay / 1000).toFixed(1)}s (cycle attempt ${retryCountRef.current})...`
     );
 
     retryTimerRef.current = setTimeout(() => {
-      if (shouldReconnect.current) connect();
+      if (shouldReconnect.current) {
+        candidateIndexRef.current = 0; // Restart from local mDNS candidate
+        attemptNextCandidate();
+      }
     }, delay);
-  }, [computeDelay, connect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearTimers, computeDelay, revokeSender, setMode, setStatus]);
 
-  // ── Public API ───────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────
+  // attemptNextCandidate — probes each candidate endpoint in sequence
+  // ────────────────────────────────────────────────────────────
+  const attemptNextCandidate = useCallback(() => {
+    const candidates = buildCandidateList();
+    const index = candidateIndexRef.current;
+
+    if (index >= candidates.length) {
+      console.warn("[WS] All discovery candidates exhausted. Scheduling retry cycle...");
+      scheduleRetry();
+      return;
+    }
+
+    const targetUrl = candidates[index];
+    setWsUrlState(targetUrl);
+    setStatus("CONNECTING");
+
+    console.log(`[WS] Probing candidate [${index + 1}/${candidates.length}]: ${targetUrl}`);
+
+    // Clean up previous socket if any
+    if (socketRef.current) {
+      socketRef.current.onclose   = null;
+      socketRef.current.onerror   = null;
+      socketRef.current.onmessage = null;
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(targetUrl);
+    } catch (err) {
+      console.warn(`[WS] WebSocket creation error on ${targetUrl}:`, err);
+      candidateIndexRef.current += 1;
+      attemptNextCandidate();
+      return;
+    }
+
+    socketRef.current = ws;
+
+    // Timeout safety for unresolved mDNS / unreachable endpoints
+    probeTimerRef.current = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        console.warn(`[WS] Probe timed out on ${targetUrl}. Trying next candidate...`);
+        try {
+          ws.onclose = null;
+          ws.onerror = null;
+          ws.close();
+        } catch {
+          // ignore
+        }
+        candidateIndexRef.current += 1;
+        attemptNextCandidate();
+      }
+    }, PROBE_TIMEOUT_MS);
+
+    ws.onopen = () => {
+      if (probeTimerRef.current) clearTimeout(probeTimerRef.current);
+      const mode = classifyConnectionMode(targetUrl);
+      console.log(`[WS] ✅ Connected successfully to ${targetUrl} [Mode: ${mode}]`);
+
+      setStatus("CONNECTED");
+      setMode(mode);
+      setWsUrlState(targetUrl);
+
+      // Reset backoff on success
+      retryCountRef.current = 0;
+      setRetryCount(0);
+      setNextRetryMs(BACKOFF_BASE_MS);
+
+      injectSender(ws);
+      startPingInterval(ws);
+    };
+
+    ws.onmessage = handleMessage;
+
+    ws.onerror = (ev) => {
+      console.warn(`[WS] Candidate failed (${targetUrl}):`, ev);
+    };
+
+    ws.onclose = () => {
+      revokeSender();
+      if (probeTimerRef.current) clearTimeout(probeTimerRef.current);
+
+      if (shouldReconnect.current) {
+        // If we were connected and lost connection, try next or cycle
+        candidateIndexRef.current += 1;
+        if (candidateIndexRef.current < candidates.length) {
+          attemptNextCandidate();
+        } else {
+          scheduleRetry();
+        }
+      }
+    };
+  }, [
+    buildCandidateList,
+    handleMessage,
+    injectSender,
+    revokeSender,
+    scheduleRetry,
+    setMode,
+    setStatus,
+    startPingInterval,
+  ]);
+
+  // ── Public APIs ──────────────────────────────────────────────
+  const reconnect = useCallback(() => {
+    shouldReconnect.current = true;
+    retryCountRef.current   = 0;
+    candidateIndexRef.current = 0;
+    setRetryCount(0);
+    setNextRetryMs(BACKOFF_BASE_MS);
+    attemptNextCandidate();
+  }, [attemptNextCandidate]);
+
   const disconnect = useCallback(() => {
     shouldReconnect.current = false;
-    clearRetryTimer();
+    clearTimers();
     revokeSender();
     if (socketRef.current) {
       socketRef.current.onclose = null;
@@ -299,34 +510,50 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       socketRef.current = null;
     }
     setStatus("DISCONNECTED");
+    setMode("DISCONNECTED");
     console.log("[WS] Deliberately disconnected.");
-  }, [clearRetryTimer, revokeSender, setStatus]);
-
-  const reconnect = useCallback(() => {
-    shouldReconnect.current = true;
-    retryCountRef.current   = 0;
-    setRetryCount(0);
-    setNextRetryMs(BACKOFF_BASE_MS);
-    connect();
-  }, [connect]);
+  }, [clearTimers, revokeSender, setMode, setStatus]);
 
   const setWsUrl = useCallback((url: string) => {
-    setWsUrlState(url);
+    const trimmed = url.trim();
+    if (!trimmed) return;
     if (typeof window !== "undefined") {
-      window.localStorage?.setItem("AGROSENSE_WS_URL", url);
+      window.localStorage?.setItem(LOCAL_STORAGE_KEY, trimmed);
     }
-    // Reconnect immediately with new URL
+    setWsUrlState(trimmed);
     shouldReconnect.current = true;
-    retryCountRef.current   = 0;
-  }, []);
+    candidateIndexRef.current = 0;
+    retryCountRef.current = 0;
+    attemptNextCandidate();
+  }, [attemptNextCandidate]);
 
-  // ── Connect on mount / when wsUrl changes ────────────────────
+  const setManualIp = useCallback((ip: string) => {
+    const cleanIp = ip.trim().replace(/^https?:\/\//, "").replace(/^wss?:\/\//, "").replace(/:81$/, "");
+    if (!cleanIp) return;
+    const constructedUrl = `ws://${cleanIp}:81`;
+    setWsUrl(constructedUrl);
+  }, [setWsUrl]);
+
+  const resetToAutoDiscovery = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage?.setItem(LOCAL_STORAGE_KEY, DEFAULT_LOCAL_MDNS_URL);
+    }
+    setWsUrlState(DEFAULT_LOCAL_MDNS_URL);
+    shouldReconnect.current = true;
+    candidateIndexRef.current = 0;
+    retryCountRef.current = 0;
+    attemptNextCandidate();
+  }, [attemptNextCandidate]);
+
+  // ── Connect on mount ─────────────────────────────────────────
   useEffect(() => {
     shouldReconnect.current = true;
-    connect();
+    candidateIndexRef.current = 0;
+    attemptNextCandidate();
+
     return () => {
       shouldReconnect.current = false;
-      clearRetryTimer();
+      clearTimers();
       revokeSender();
       if (socketRef.current) {
         socketRef.current.onclose = null;
@@ -334,15 +561,19 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         socketRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wsUrl]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <WebSocketContext.Provider
       value={{
         connectionStatus,
+        connectionMode,
         wsUrl,
+        espIp,
+        latencyMs,
         setWsUrl,
+        setManualIp,
+        resetToAutoDiscovery,
         reconnect,
         disconnect,
         retryCount,

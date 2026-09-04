@@ -4,6 +4,9 @@ export type ConnectionStatus =
   | "CONNECTED"    // open and receiving telemetry frames
   | "DISCONNECTED" // deliberately closed or hardware went offline
   | "ERROR";       // socket errored before or after being open
+
+export type ConnectionMode = "LOCAL ESP" | "CLOUDFLARE" | "DISCONNECTED";
+
 export type ModelStatus = "idle" | "loading" | "ready" | "error";
 export type DeviceStatus = "online" | "offline";
 
@@ -16,18 +19,40 @@ export interface Device {
 }
 
 // ─── Telemetry ─────────────────────────────────────────────────
+
+/** Sensor status strings sent by the ESP firmware */
+export type SensorStatus =
+  | "ok"                  // Physical sensor read successfully
+  | "fault"               // ADC or hardware fault
+  | "no_probe"            // Probe not connected (floating input)
+  | "sensor_unavailable"; // No physical sensor wired to this pin
+
 export interface TelemetryDataPoint {
-  temperature: number;
-  humidity: number;
-  soilMoisture: number;
+  /** Degrees Celsius from physical DHT sensor — null if no sensor */
+  temperature: number | null;
+  /** % Relative Humidity from physical DHT sensor — null if no sensor */
+  humidity: number | null;
+  /** % Soil moisture from physical resistive probe on A0 — null on fault */
+  soilMoisture: number | null;
+  tempStatus?:  SensorStatus;
+  humidStatus?: SensorStatus;
+  soilStatus?:  SensorStatus;
   timestamp: Date;
+  ip?: string;
 }
 
 /** Shape of a single telemetry payload emitted over the WebSocket. */
 export interface TelemetryPayload {
-  temperature: number;
-  humidity: number;
-  soilMoisture: number;
+  /** null = no physical sensor connected */
+  temperature: number | null;
+  /** null = no physical sensor connected */
+  humidity: number | null;
+  /** null = sensor fault or probe disconnected */
+  soilMoisture: number | null;
+  tempStatus?:  SensorStatus;
+  humidStatus?: SensorStatus;
+  soilStatus?:  SensorStatus;
+  ip?: string;
 }
 
 // ─── AI Inference ──────────────────────────────────────────────

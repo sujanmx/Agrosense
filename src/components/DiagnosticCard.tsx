@@ -231,25 +231,30 @@ export function DiagnosticCard() {
         </div>
       )}
 
-      {/* ── Environmental context (if telemetry available) ────────────── */}
-      {temperature > 0 && (
+      {/* ── Environmental context (if REAL sensor telemetry available) ──── */}
+      {/* Only shown when temperature is from a physical sensor (non-null).  */}
+      {/* If temperature is null (no sensor), this block is hidden entirely. */}
+      {temperature !== null && temperature > 0 && (
         <div className="px-3">
           <div className="rounded-md bg-zinc-900/60 border border-border/20 px-2.5 py-1.5">
             <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-1">
               Environmental Context
+              <span className="ml-1.5 text-emerald-500 normal-case font-normal">(real sensor)</span>
             </p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
                 <Thermometer className="h-3 w-3 text-orange-400" />
                 {temperature.toFixed(1)}°C
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
-                <Droplets className="h-3 w-3 text-blue-400" />
-                {humidity.toFixed(1)}% RH
-                {humidity > 70 && (
-                  <span className="text-amber-400 text-[8px] ml-0.5">▲ HIGH RISK</span>
-                )}
-              </div>
+              {humidity !== null && (
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
+                  <Droplets className="h-3 w-3 text-blue-400" />
+                  {humidity.toFixed(1)}% RH
+                  {humidity > 70 && (
+                    <span className="text-amber-400 text-[8px] ml-0.5">▲ HIGH RISK</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

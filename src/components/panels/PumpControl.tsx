@@ -175,8 +175,10 @@ function HardwareToggle({
         {isCommandInFlight
           ? "Command in progress…"
           : isActive
-            ? `Stop ${label}`
-            : `Start ${label}`}
+            // Capitalise the inactiveAction verb (e.g. "stop" → "Stop Pump", "close" → "Close Valve")
+            ? `${inactiveAction.charAt(0).toUpperCase()}${inactiveAction.slice(1)} ${label}`
+            // Capitalise the activeAction verb (e.g. "start" → "Start Pump", "open" → "Open Valve")
+            : `${activeAction.charAt(0).toUpperCase()}${activeAction.slice(1)} ${label}`}
       </Button>
 
       {/* Command pipeline status */}
