@@ -9,7 +9,7 @@ AgroSense combines computer vision, on-device AI, and IoT hardware to help detec
 ## Core Technologies
 
 - MobileNetV3 — Edge plant disease classification
-- Gemma 2B-IT — On-device agricultural advisory
+- Gemma 2B-IT — On-device agricultural advisory for now its use gemini
 - MediaPipe Tasks GenAI — Local LLM inference
 - ONNX Runtime — Edge model execution
 - ESP8266 — IoT gateway
